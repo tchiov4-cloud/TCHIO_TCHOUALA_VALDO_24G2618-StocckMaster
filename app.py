@@ -20,9 +20,10 @@ def get_db():
         user=os.getenv('DB_USER'),
         password=os.getenv('DB_PASS'),
         port=int(os.getenv('DB_PORT', 4000)),
-        database=os.getenv('DB_NAME', 'test'),
-        # TiDB nécessite souvent SSL pour les connexions distantes
-        ssl_verify_cert=True 
+        database=os.getenv('DB_NAME', 'elitestock'),
+        # TRÈS IMPORTANT pour TiDB sur Render :
+        ssl_disabled=False,
+        ssl_verify_cert=False
     )
 
 def fig_to_b64(fig):
