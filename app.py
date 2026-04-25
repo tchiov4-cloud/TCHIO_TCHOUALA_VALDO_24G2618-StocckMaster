@@ -112,7 +112,7 @@ def ajouter():
 def index():
     if request.method == 'POST':
         return ajouter()
-    return render_template("form.html")
+    return render_template("dashboard.html")
 
 @app.route('/affichage')
 def affichage():
