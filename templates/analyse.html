@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Dynamique | EliteStock</title>
+    <style>
+        :root {
+            --bg: #0f172a; --card: #1e293b; 
+            --danger: #f43f5e; --warning: #fbbf24; --success: #10b981;
+            --text: #f8fafc;
+        }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 40px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+
+        /* CONTENEUR DE LA BARRE (Le fond gris) */
+        .progress-container { 
+            background: #334155; 
+            height: 20px; 
+            border-radius: 10px; 
+            margin: 15px 0; 
+            overflow: hidden; /* Important pour que la barre ne dépasse pas */
+            position: relative;
+        }
+
+        /* LA BARRE QUI DIMINUE */
+        .progress-fill { 
+            height: 100%; 
+            transition: width 0.5s ease-in-out; /* Animation fluide quand ça diminue */
+        }
+
+        /* MARQUEUR DU SEUIL DE 30 (Ligne de sécurité) */
+        .seuil-ligne {
+            position: absolute;
+            left: 30%; /* Fixé à 30% */
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(244, 63, 94, 0.5);
+            z-index: 2;
+        }
+
+        .info { display: flex; justify-content: space-between; font-weight: bold; }
+        .conseil { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; border-top: 1px solid #334155; padding-top: 10px; }
+        
+        @media (max-width: 768px) {
+            nav {
+                display: none; /* Cache la sidebar sur mobile ou transforme-la en menu burger */
+            }
+            main {
+                margin-left: 0;
+                width: 100%;
+                padding: 15px;
+            }
+            .kpi-grid {
+                grid-template-columns: 1fr; /* 1 carte par ligne sur mobile */
+            }
+            .main-grid {
+                grid-template-columns: 1fr; /* Tableaux et actions l'un sous l'autre */
+            }
+        }
+
+        /* Pour les Stats : empiler les graphiques */
+        @media (max-width: 900px) {
+            .grid-charts {
+            grid-template-columns: 1fr !important;
+            }
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Analyse en Temps Réel</h1>
+        
+        {% for p in produits %}
+        <div class="card">
+            <div class="info">
+                <span>{{ p.nom }}</span>
+                <span>{{ p.qte }} / 100 casiers</span>
+            </div>
+
+            <div class="progress-container">
+                <div class="seuil-ligne"></div> <div class="progress-fill" 
+                     style="width: {{ p.pct }}%; 
+                            background-color: {% if p.qte <= 30 %}var(--danger){% elif p.qte <= 60 %}var(--warning){% else %}var(--success){% endif %};">
+                </div>
+            </div>
+
+            <div class="conseil">
+                <strong>Analyse :</strong> {{ p.conseil }}
+                {% if p.qte > 30 %}
+                    <br><small>Encore {{ p.qte - 30 }} ventes possibles avant l'alerte.</small>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <a href="/stats" style="color: #38bdf8; text-decoration: none;">← Retour au Dashboard</a>
+    </div>
+</body>
+</html>

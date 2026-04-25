@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyses & Statistiques | EliteStock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;           /* Fond sombre profond */
+            --card: #1e293b;         /* Fond des cartes (identique au dashboard) */
+            --accent: #38bdf8;       /* Bleu ciel EliteStock */
+            --text: #f8fafc;         /* Texte blanc */
+            --text-dim: #94a3b8;     /* Texte gris secondaire */
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* En-tête */
+        .header {
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--accent);
+        }
+
+        h1 {
+            color: var(--accent);
+            font-weight: 800;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        /* Sections de graphiques */
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 40px 0 20px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        /* Grille des graphiques */
+        .grid-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+        }
+
+        .chart-card {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                display: none; /* Cache la sidebar sur mobile ou transforme-la en menu burger */
+            }
+            main {
+                margin-left: 0;
+                width: 100%;
+                padding: 15px;
+            }
+            .kpi-grid {
+                grid-template-columns: 1fr; /* 1 carte par ligne sur mobile */
+            }
+            .main-grid {
+                grid-template-columns: 1fr; /* Tableaux et actions l'un sous l'autre */
+            }
+        }
+
+        /* Pour les Stats : empiler les graphiques */
+        @media (max-width: 900px) {
+            .grid-charts {
+            grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <a href="/dashboard" class="nav-link">← Retour au Tableau de Bord</a>
+        <h1>📈 Analyses de Performance</h1>
+    </div>
+
+    <h2 class="section-title">Répartition Globale (Stocks & Flux)</h2>
+    <div class="grid-charts">
+        {% for pie in pies %}
+        <div class="chart-card">
+            <img src="data:image/png;base64,{{ pie }}" alt="Graphique de répartition">
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2 class="section-title">Évolution des Flux par Période</h2>
+    <div class="grid-charts">
+        {% for bar in bars %}
+        <div class="chart-card">
+            <img src="data:image/png;base64,{{ bar }}" alt="Graphique d'évolution">
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>
