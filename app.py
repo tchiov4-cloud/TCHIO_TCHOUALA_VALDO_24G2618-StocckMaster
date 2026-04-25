@@ -20,7 +20,7 @@ def get_db():
         user=os.getenv('DB_USER'),
         password=os.getenv('DB_PASS'),
         port=int(os.getenv('DB_PORT', 4000)),
-        database=os.getenv('DB_NAME', 'elitestock'),
+        database=os.getenv('DB_NAME', 'test'),
         # TRÈS IMPORTANT pour TiDB sur Render :
         ssl_disabled=False,
         ssl_verify_cert=False
