@@ -108,11 +108,18 @@ def ajouter():
 # ==========================================
 
 @app.route('/')
-@app.route('/form', methods=['GET', 'POST'])
 def index():
-    if request.method == 'POST':
-        return ajouter()
-    return render_template("dashboard.html")
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        # On récupère les stocks pour les afficher sur le dashboard
+        cursor.execute("SELECT * FROM stocks_produits")
+        stocks = cursor.fetchall()
+        cursor.close()
+        db.close()
+        return render_template("dashboard.html", stocks=stocks)
+    except Exception as e:
+        return f"Erreur de connexion à la base : {e}"
 
 @app.route('/affichage')
 def affichage():
