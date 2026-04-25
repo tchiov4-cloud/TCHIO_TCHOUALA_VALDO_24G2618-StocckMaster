@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use('Agg') # Pour éviter les erreurs de threads avec Flask
 import matplotlib.pyplot as plt
 import io, base64
+import os
 from collections import defaultdict
 
 # ==========================================
@@ -11,12 +12,16 @@ from collections import defaultdict
 # ==========================================
 app = Flask(__name__)
 
+
 def get_db():
     return mysql.connector.connect(
-        host="localhost",
-        user="valdo_tchio",
-        password="Tchio123",
-        database="gestion_ventes"
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASS'),
+        port=int(os.getenv('DB_PORT', 4000)),
+        database=os.getenv('DB_NAME', 'test'),
+        # TiDB nécessite souvent SSL pour les connexions distantes
+        ssl_verify_cert=True 
     )
 
 def fig_to_b64(fig):
