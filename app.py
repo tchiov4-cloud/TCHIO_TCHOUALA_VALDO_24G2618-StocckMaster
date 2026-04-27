@@ -165,35 +165,62 @@ def affichage():
         if conn: conn.close()
 
 @app.route('/stats')
+@app.route('/stats')
 def stats():
     conn = None
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
-        plt.rcParams.update({"figure.facecolor": "#1e293b", "axes.facecolor": "#1e293b", "text.color": "#f8fafc", "axes.labelcolor": "#f8fafc", "xtick.color": "#94a3b8", "ytick.color": "#94a3b8"})
+        # Style sombre pour correspondre à ton Dashboard
+        plt.rcParams.update({
+            "figure.facecolor": "#1e293b", "axes.facecolor": "#1e293b", 
+            "text.color": "#f8fafc", "axes.labelcolor": "#f8fafc", 
+            "xtick.color": "#94a3b8", "ytick.color": "#94a3b8"
+        })
 
-        # Graphique 1 : Stock Actuel (Base 100 par produit)
+        # Données Stocks
         cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
-        cat_stock = {r['nom_produit']: float(r['quantite_casiers']) for r in cursor.fetchall() if r['quantite_casiers'] > 0}
+        res_s = cursor.fetchall()
+        noms_s = [r['nom_produit'] for r in res_s]
+        qtes_s = [float(r['quantite_casiers']) for r in res_s]
 
-        # Graphique 2 : Ventes (Sorties uniquement)
+        # Données Ventes
         cursor.execute("SELECT produit, SUM(quantite) as total FROM ventes WHERE LOWER(type_mouvement)='sortie' GROUP BY produit")
-        cat_vente = {r['produit']: float(r['total']) for r in cursor.fetchall() if r['total'] > 0}
+        res_v = cursor.fetchall()
+        noms_v = [r['produit'] for r in res_v]
+        qtes_v = [float(r['total']) for r in res_v]
 
         pies = []
-        for data, title in [(cat_stock, "DISPONIBILITÉ DES STOCKS"), (cat_vente, "VOLUME DES VENTES")]:
-            if data:
-                fig, ax = plt.subplots(figsize=(8, 8))
-                ax.pie(data.values(), labels=data.keys(), autopct='%1.1f%%', startangle=140, colors=['#38bdf8','#10b981','#f43f5e','#fbbf24', '#818cf8'])
-                ax.set_title(title, color="#38bdf8", fontweight='bold', pad=20)
-                pies.append(fig_to_b64(fig))
+        bars = []
 
-        return render_template('stats.html', pies=pies, bars=[])
+        # 1. Camembert : Répartition du Stock Actuel
+        if qtes_s:
+            fig1, ax1 = plt.subplots(figsize=(7, 7))
+            ax1.pie(qtes_s, labels=noms_s, autopct='%1.1f%%', startangle=140, colors=['#38bdf8','#10b981','#f43f5e','#fbbf24'])
+            ax1.set_title("RÉPARTITION DU STOCK", color="#38bdf8", fontweight='bold')
+            pies.append(fig_to_b64(fig1))
+
+        # 2. Histogramme (Barres) : Comparaison des quantités en stock
+        if qtes_s:
+            fig2, ax2 = plt.subplots(figsize=(10, 5))
+            ax2.bar(noms_s, qtes_s, color='#38bdf8', alpha=0.8)
+            ax2.axhline(y=35, color='#f43f5e', linestyle='--', label="Seuil Critique (35)")
+            ax2.set_title("NIVEAU DE STOCK PAR PRODUIT", fontweight='bold')
+            ax2.legend()
+            bars.append(fig_to_b64(fig2))
+
+        # 3. Barres Horizontales : Top des Ventes
+        if qtes_v:
+            fig3, ax3 = plt.subplots(figsize=(10, 5))
+            ax3.barh(noms_v, qtes_v, color='#10b981')
+            ax3.set_title("VOLUMES VENDUS PAR PRODUIT", fontweight='bold')
+            bars.append(fig_to_b64(fig3))
+
+        return render_template('stats.html', pies=pies, bars=bars)
     except Exception as e:
         return f"Erreur stats : {str(e)}"
     finally:
         if conn: conn.close()
-
 @app.route('/form')
 def form():
     return render_template('form.html')
