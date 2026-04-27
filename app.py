@@ -32,53 +32,52 @@ def fig_to_b64(fig):
 # ==========================================
 # 2. ROUTES DE TRAITEMENT
 # ==========================================
-@app.route('/ajouter', methods=['POST'])
 def ajouter():
     conn = None
     try:
+        # 1. Récupération des données du formulaire
         nom_produit = request.form.get('produit').strip()
+        qte = int(request.form.get('qte', 0))
+        mouv_raw = request.form.get('type_mouvement', '').lower().strip()
+        
+        # Autres champs pour la journalisation
         client = request.form.get('client', 'Anonyme').strip()
         telephone = request.form.get('telephone', 'N/A').strip()
         date_vente = request.form.get('date_vente')
-        mouv_raw = request.form.get('type_mouvement', '').lower()
+        prix = float(request.form.get('pu', 0))
         cat_fixe = request.form.get('type_categorie')
-        
-        try:
-            qte = int(request.form.get('qte', 0))
-            prix = float(request.form.get('pu', 0))
-        except:
-            qte, prix = 0, 0
 
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Récupération du stock actuel
-        cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom_produit,))
-        result = cursor.fetchone()
-        stock_actuel = result['quantite_casiers'] if result else 100
-
         # 2. MISE À JOUR DU STOCK (Impact direct sur le Dashboard)
+        
         if "entree" in mouv_raw:
-            # On garde votre logique d'entrée sous condition
-            if stock_actuel <= 35:
-                cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
+            # On ajoute au stock sans condition restrictive pour être sûr que ça marche
+            cursor.execute("""
+                UPDATE produits 
+                SET quantite_casiers = quantite_casiers + %s 
+                WHERE nom_produit = %s
+            """, (qte, nom_produit))
         
         elif "sortie" in mouv_raw or "vente" in mouv_raw:
-            # LA VENTE DIMINUE LE STOCK (Soustraction réelle)
+            # ICI : La vente diminue le stock. 
+            # GREATEST(0, ...) empêche de descendre en dessous de zéro.
             cursor.execute("""
                 UPDATE produits 
                 SET quantite_casiers = GREATEST(0, quantite_casiers - %s) 
                 WHERE nom_produit = %s
             """, (qte, nom_produit))
 
-        # 3. Journalisation
+        # 3. Journalisation (Historique pour le dashboard également)
         cursor.execute("""
             INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (nom_produit, client, telephone, qte, prix, mouv_raw, cat_fixe, date_vente))
         
+        # TRÈS IMPORTANT : Valider les changements
         conn.commit()
-        # Redirection vers l'affichage, puis vous pourrez cliquer sur Dashboard pour voir le changement
+        
         return redirect(url_for('affichage'))
 
     except Exception as e:
