@@ -13,8 +13,6 @@ from collections import defaultdict
 app = Flask(__name__)
 
 def get_db():
-    # Correction : Utilisation systématique de ssl_verify_cert=False pour Render/TiDB
-    # et vérification de la variable DB_NAME
     return mysql.connector.connect(
         host=os.getenv('DB_HOST'),
         user=os.getenv('DB_USER'),
@@ -22,7 +20,7 @@ def get_db():
         port=int(os.getenv('DB_PORT', 4000)),
         database=os.getenv('DB_NAME', 'valdo_stock'),
         ssl_disabled=False,
-        ssl_verify_cert=False
+        ssl_verify_cert=False # Obligatoire pour Render + TiDB Cloud
     )
 
 def fig_to_b64(fig):
@@ -39,11 +37,7 @@ def fig_to_b64(fig):
 def ajouter():
     conn = None
     try:
-        # On harmonise la récupération du nom du produit
-        nom_produit = request.form.get('produit') or request.form.get('type_categorie')
-        if nom_produit:
-            nom_produit = nom_produit.strip()
-
+        nom_produit = request.form.get('produit').strip()
         client = request.form.get('client', 'Anonyme').strip()
         telephone = request.form.get('telephone', 'N/A').strip()
         
@@ -57,20 +51,32 @@ def ajouter():
         cat_fixe = request.form.get('type_categorie') 
         date_vente = request.form.get('date_vente')
 
-        if not nom_produit:
-            return "Erreur : Le nom du produit est vide.", 400
-
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # IMPORTANT : On utilise 'produits' comme nom de table ici
-        cursor.execute("INSERT IGNORE INTO produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
+        # 1. Vérifier le stock actuel avant action
+        cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom_produit,))
+        res = cursor.fetchone()
         
+        # Si le produit n'existe pas, on l'initialise à 100 selon ta logique
+        if not res:
+            cursor.execute("INSERT INTO produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
+            stock_actuel = 100
+        else:
+            stock_actuel = res['quantite_casiers']
+
+        # 2. Appliquer la logique métier
         if "entree" in mouv:
-            cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
+            # On ne peut augmenter que si le stock est <= 35
+            if stock_actuel <= 35:
+                cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
+            else:
+                return f"Action refusée : Le stock de {nom_produit} ({stock_actuel}) est suffisant (> 35).", 400
+        
         elif "sortie" in mouv:
             cursor.execute("UPDATE produits SET quantite_casiers = GREATEST(0, quantite_casiers - %s) WHERE nom_produit = %s", (qte, nom_produit))
 
+        # 3. Enregistrer l'opération dans le journal
         cursor.execute("""
             INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -81,7 +87,7 @@ def ajouter():
 
     except Exception as e:
         if conn: conn.rollback()
-        return f"Erreur système : {str(e)}", 500
+        return f"Erreur : {str(e)}", 500
     finally:
         if conn: conn.close()
 
@@ -100,27 +106,22 @@ def dashboard():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # 1. Clients
         cursor.execute("SELECT COUNT(DISTINCT client) as nb FROM ventes WHERE client != 'Anonyme'")
         total_clients = cursor.fetchone()['nb'] or 0
 
-        # 2. Stock Total
         cursor.execute("SELECT SUM(quantite_casiers) as total FROM produits")
         res_stock = cursor.fetchone()
-        stock_total = res_stock['total'] if res_stock and res_stock['total'] else 0
+        stock_total = res_stock['total'] if res_stock['total'] else 0
 
-        # 3. Alertes (Table 'produits')
         cursor.execute("SELECT nom_produit as produit, quantite_casiers as reste FROM produits WHERE quantite_casiers <= 35 ORDER BY quantite_casiers ASC")
         alertes_list = cursor.fetchall()
 
-        # 4. Flux
         cursor.execute("SELECT type_mouvement, quantite, prix_unitaire FROM ventes")
         mouvements = cursor.fetchall()
 
         t_entrees, v_entrees, t_sorties, v_sorties = 0, 0, 0, 0
         for m in mouvements:
-            q = float(m['quantite'] or 0)
-            p = float(m['prix_unitaire'] or 0)
+            q, p = float(m['quantite'] or 0), float(m['prix_unitaire'] or 0)
             mouv = str(m['type_mouvement']).lower()
             if "entree" in mouv:
                 t_entrees += q
@@ -162,32 +163,6 @@ def affichage():
     finally:
         if conn: conn.close()
 
-@app.route('/analyse')
-def analyse():
-    conn = None
-    try:
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
-        stocks_db = cursor.fetchall()
-
-        analyse_produits = []
-        conseils_list = []
-        for row in stocks_db:
-            qte, nom = int(row['quantite_casiers']), row['nom_produit']
-            statut = "SAIN"
-            if qte <= 30: 
-                statut = "CRITIQUE"
-                conseils_list.append(f"Achat urgent : {nom}")
-            elif qte <= 60: statut = "ALERTE"
-            analyse_produits.append({'nom': nom, 'qte': qte, 'statut': statut, 'pct': min(qte, 100)})
-
-        return render_template('analyse.html', produits=analyse_produits, conseils=conseils_list)
-    except Exception as e:
-        return f"Erreur analyse : {str(e)}"
-    finally:
-        if conn: conn.close()
-
 @app.route('/stats')
 def stats():
     conn = None
@@ -196,20 +171,21 @@ def stats():
         cursor = conn.cursor(dictionary=True)
         plt.rcParams.update({"figure.facecolor": "#1e293b", "axes.facecolor": "#1e293b", "text.color": "#f8fafc", "axes.labelcolor": "#f8fafc", "xtick.color": "#94a3b8", "ytick.color": "#94a3b8"})
 
+        # Graphique 1 : Stock Actuel (Base 100 par produit)
         cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
-        cat_stock = {r['nom_produit']: float(r['quantite_casiers']) for r in cursor.fetchall()}
+        cat_stock = {r['nom_produit']: float(r['quantite_casiers']) for r in cursor.fetchall() if r['quantite_casiers'] > 0}
 
+        # Graphique 2 : Ventes (Sorties uniquement)
         cursor.execute("SELECT produit, SUM(quantite) as total FROM ventes WHERE LOWER(type_mouvement)='sortie' GROUP BY produit")
-        cat_vente = {r['produit']: float(r['total']) for r in cursor.fetchall()}
+        cat_vente = {r['produit']: float(r['total']) for r in cursor.fetchall() if r['total'] > 0}
 
         pies = []
-        for data, title in [(cat_vente, "VENTES PAR PRODUIT"), (cat_stock, "STOCK ACTUEL")]:
-            fig, ax = plt.subplots(figsize=(8, 8))
-            clean = {k: v for k, v in data.items() if v > 0}
-            if clean:
-                ax.pie(clean.values(), labels=clean.keys(), autopct='%1.1f%%', startangle=140, colors=['#38bdf8','#10b981','#f43f5e','#fbbf24'])
-            ax.set_title(title, color="#38bdf8", fontweight='bold', pad=20)
-            pies.append(fig_to_b64(fig))
+        for data, title in [(cat_stock, "DISPONIBILITÉ DES STOCKS"), (cat_vente, "VOLUME DES VENTES")]:
+            if data:
+                fig, ax = plt.subplots(figsize=(8, 8))
+                ax.pie(data.values(), labels=data.keys(), autopct='%1.1f%%', startangle=140, colors=['#38bdf8','#10b981','#f43f5e','#fbbf24', '#818cf8'])
+                ax.set_title(title, color="#38bdf8", fontweight='bold', pad=20)
+                pies.append(fig_to_b64(fig))
 
         return render_template('stats.html', pies=pies, bars=[])
     except Exception as e:
@@ -220,6 +196,35 @@ def stats():
 @app.route('/form')
 def form():
     return render_template('form.html')
+
+@app.route('/analyse')
+def analyse():
+    conn = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
+        stocks_db = cursor.fetchall()
+
+        analyse_produits = []
+        for row in stocks_db:
+            qte, nom = int(row['quantite_casiers']), row['nom_produit']
+            statut = "SAIN"
+            conseil = "Stock optimal."
+            if qte <= 30: 
+                statut = "CRITIQUE"
+                conseil = "RÉAPPROVISIONNEMENT URGENT !"
+            elif qte <= 60: 
+                statut = "ALERTE"
+                conseil = "Surveiller les ventes."
+            
+            analyse_produits.append({'nom': nom, 'qte': qte, 'statut': statut, 'pct': min(qte, 100), 'conseil': conseil})
+
+        return render_template('analyse.html', produits=analyse_produits)
+    except Exception as e:
+        return f"Erreur analyse : {str(e)}"
+    finally:
+        if conn: conn.close()
 
 if __name__ == '__main__':
     app.run(debug=False)
