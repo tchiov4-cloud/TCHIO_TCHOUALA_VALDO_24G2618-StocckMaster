@@ -113,7 +113,7 @@ def index():
         db = get_db()
         cursor = db.cursor(dictionary=True)
         # On récupère les stocks pour les afficher sur le dashboard
-        cursor.execute("SELECT * FROM stocks_produits")
+        cursor.execute("SELECT * FROM produits")
         stocks = cursor.fetchall()
         cursor.close()
         db.close()
