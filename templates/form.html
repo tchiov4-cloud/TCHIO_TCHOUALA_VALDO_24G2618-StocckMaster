@@ -14,7 +14,7 @@
             --text-dim: #94a3b8;
             --input-bg: #0f172a;
             --border: #334155;
-            --nav-bg: rgba(30, 41, 59, 0.8);
+            --nav-bg: rgba(30, 41, 59, 0.9);
         }
 
         body {
@@ -24,10 +24,9 @@
             margin: 0;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Changé pour mobile */
+            align-items: center;
             min-height: 100vh;
             padding: 20px;
-            padding-bottom: 80px; /* Espace pour la barre de nav mobile */
         }
 
         .card {
@@ -54,14 +53,8 @@
             gap: 15px;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
         .full-width { grid-column: span 2; }
-
         label { color: var(--text-dim); font-size: 0.8rem; font-weight: 600; }
 
         input, select {
@@ -90,7 +83,7 @@
             margin-top: 10px;
         }
 
-        /* BARRE DE NAVIGATION MOBILE */
+        /* --- NAVIGATION MOBILE (PAR DÉFAUT CACHÉE) --- */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -99,7 +92,7 @@
             height: 65px;
             background: var(--nav-bg);
             backdrop-filter: blur(10px);
-            display: flex;
+            display: none; /* CACHÉ SUR PC */
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid var(--border);
@@ -115,17 +108,24 @@
             color: var(--text-dim);
             font-size: 0.7rem;
             font-weight: 600;
-            transition: 0.3s;
         }
 
-        .nav-item i { font-size: 1.2rem; margin-bottom: 4px; }
         .nav-item.active { color: var(--accent); }
 
-        @media (max-width: 480px) {
+        /* --- RÉGLAGES POUR MOBILE --- */
+        @media (max-width: 768px) {
+            body { 
+                align-items: flex-start; 
+                padding-bottom: 90px; /* Espace pour la barre de nav */
+            }
+            
+            .bottom-nav { 
+                display: flex; /* S'affiche sur mobile */
+            }
+
             .form-grid { grid-template-columns: 1fr; }
             .full-width { grid-column: span 1; }
             .card { padding: 20px; }
-            h1 { font-size: 1.3rem; }
         }
     </style>
 </head>
@@ -149,7 +149,7 @@
         </div>
 
         <div class="form-group full-width">
-            <label>Sélectionner le Produit :</label>
+            <label>Produit</label>
             <select name="produit" required>
                 <option value="Malta">Malta</option>
                 <option value="Isembeck">Isembeck</option>
@@ -188,24 +188,23 @@
 
         <button type="submit" class="btn-submit">Valider l'opération</button>
     </form>
+    
+    <style>@media (max-width: 768px) { .pc-back { display: none; } }</style>
+    <a href="/dashboard" class="pc-back" style="display: block; text-align: center; margin-top: 15px; color: var(--text-dim); text-decoration: none; font-size: 0.8rem;">← Retour</a>
 </div>
 
 <nav class="bottom-nav">
     <a href="/dashboard" class="nav-item">
-        <span>🏠</span>
-        <span>Accueil</span>
+        <span>🏠</span><span>Accueil</span>
     </a>
     <a href="/form" class="nav-item active">
-        <span>📝</span>
-        <span>Saisie</span>
+        <span>📝</span><span>Saisie</span>
     </a>
     <a href="/analyse" class="nav-item">
-        <span>📊</span>
-        <span>Analyse</span>
+        <span>📊</span><span>Analyse</span>
     </a>
     <a href="/affichage" class="nav-item">
-        <span>📜</span>
-        <span>Histo.</span>
+        <span>📜</span><span>Histo.</span>
     </a>
 </nav>
 
