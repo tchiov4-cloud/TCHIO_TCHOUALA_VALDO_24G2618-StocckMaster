@@ -32,7 +32,7 @@ def fig_to_b64(fig):
 # ==========================================
 # 2. ROUTES DE TRAITEMENT
 # ==========================================
-app.route('/dashboard')
+@app.route('/ajouter', methods=['POST']) 
 def ajouter():
     conn = None
     try:
