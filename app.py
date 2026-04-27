@@ -232,18 +232,36 @@ def analyse():
         stocks_db = cursor.fetchall()
 
         analyse_produits = []
+        # On définit la capacité maximale d'un casier pour le calcul du % (ex: 100)
+        CAPACITE_MAX = 100 
+
         for row in stocks_db:
-            qte, nom = int(row['quantite_casiers']), row['nom_produit']
-            statut = "SAIN"
-            conseil = "Stock optimal."
+            qte = int(row['quantite_casiers'])
+            nom = row['nom_produit']
+            
+            # 1. Calcul du pourcentage pour la jauge (ex: 80/100 -> 80%)
+            # On s'assure que ça ne dépasse pas 100% et que ça ne descend pas sous 0%
+            pourcentage = max(0, min((qte / CAPACITE_MAX) * 100, 100))
+            
+            # 2. Détermination du statut et du conseil
             if qte <= 30: 
                 statut = "CRITIQUE"
                 conseil = "RÉAPPROVISIONNEMENT URGENT !"
             elif qte <= 60: 
                 statut = "ALERTE"
-                conseil = "Surveiller les ventes."
+                conseil = f"Surveiller les ventes. Encore {qte - 30} ventes avant critique."
+            else:
+                statut = "SAIN"
+                conseil = f"Stock optimal. Encore {qte - 60} ventes possibles avant l'alerte."
             
-            analyse_produits.append({'nom': nom, 'qte': qte, 'statut': statut, 'pct': min(qte, 100), 'conseil': conseil})
+            # 3. Ajout à la liste avec le bon 'pct' pour le CSS de la barre
+            analyse_produits.append({
+                'nom': nom, 
+                'qte': qte, 
+                'statut': statut, 
+                'pct': pourcentage, 
+                'conseil': conseil
+            })
 
         return render_template('analyse.html', produits=analyse_produits)
     except Exception as e:
