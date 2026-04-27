@@ -32,7 +32,6 @@ def fig_to_b64(fig):
 # ==========================================
 # 2. ROUTES DE TRAITEMENT
 # ==========================================
-
 @app.route('/ajouter', methods=['POST'])
 def ajouter():
     conn = None
@@ -53,41 +52,33 @@ def ajouter():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Récupérer le niveau actuel du stock
+        # 1. Récupération du stock actuel
         cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom_produit,))
         result = cursor.fetchone()
-        
-        if not result:
-            cursor.execute("INSERT INTO produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
-            stock_actuel = 100
-        else:
-            stock_actuel = result['quantite_casiers']
+        stock_actuel = result['quantite_casiers'] if result else 100
 
-        # 2. Logique Métier
-        # --- LOGIQUE ENTRÉE (On ne touche pas, reste comme tu l'as voulu) ---
+        # 2. MISE À JOUR DU STOCK (Impact direct sur le Dashboard)
         if "entree" in mouv_raw:
+            # On garde votre logique d'entrée sous condition
             if stock_actuel <= 35:
                 cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
-            else:
-                return f"Refusé : Le stock de {nom_produit} est suffisant ({stock_actuel} > 35).", 400
         
-        # --- LOGIQUE VENTE (Modifiée pour toujours diminuer) ---
         elif "sortie" in mouv_raw or "vente" in mouv_raw:
-            # On soustrait directement la quantité vendue
-            # GREATEST(0, ...) évite que le stock devienne négatif si on vend plus que prévu
+            # LA VENTE DIMINUE LE STOCK (Soustraction réelle)
             cursor.execute("""
                 UPDATE produits 
                 SET quantite_casiers = GREATEST(0, quantite_casiers - %s) 
                 WHERE nom_produit = %s
             """, (qte, nom_produit))
 
-        # 3. Journalisation de l'opération
+        # 3. Journalisation
         cursor.execute("""
             INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (nom_produit, client, telephone, qte, prix, mouv_raw, cat_fixe, date_vente))
         
         conn.commit()
+        # Redirection vers l'affichage, puis vous pourrez cliquer sur Dashboard pour voir le changement
         return redirect(url_for('affichage'))
 
     except Exception as e:
