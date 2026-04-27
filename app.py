@@ -41,7 +41,9 @@ def ajouter():
         client = request.form.get('client', 'Anonyme').strip()
         telephone = request.form.get('telephone', 'N/A').strip()
         date_vente = request.form.get('date_vente')
-        mouv = request.form.get('type_mouvement', '').lower()
+        
+        # Correction ici : on s'assure de bien capturer le type
+        mouv_raw = request.form.get('type_mouvement', '').lower()
         cat_fixe = request.form.get('type_categorie')
         
         try:
@@ -53,33 +55,39 @@ def ajouter():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Récupérer le niveau actuel du stock
+        # 1. Récupérer le niveau actuel
         cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom_produit,))
         result = cursor.fetchone()
         
-        # Initialisation automatique à 100 si le produit est nouveau
         if not result:
             cursor.execute("INSERT INTO produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
             stock_actuel = 100
         else:
             stock_actuel = result['quantite_casiers']
 
-        # 2. Logique Métier : Entrée autorisée uniquement si stock <= 35
-        if "entree" in mouv:
+        # 2. Logique Métier Corrigée
+        # On vérifie "entree" OU "achat" / "sortie" OU "vente" pour être plus flexible
+        is_entree = "entree" in mouv_raw or "achat" in mouv_raw
+        is_sortie = "sortie" in mouv_raw or "vente" in mouv_raw
+
+        if is_entree:
             if stock_actuel <= 35:
                 cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
             else:
-                return f"Refusé : Le stock de {nom_produit} est suffisant ({stock_actuel} > 35). Pas besoin de réapprovisionner.", 400
+                return f"Refusé : Stock suffisant ({stock_actuel} > 35).", 400
         
-        elif "sortie" in mouv:
-            # On diminue le stock et on s'assure qu'il ne tombe pas sous 0
-            cursor.execute("UPDATE produits SET quantite_casiers = GREATEST(0, quantite_casiers - %s) WHERE nom_produit = %s", (qte, nom_produit))
+        elif is_sortie:
+            # Vérification de sécurité : ne pas vendre plus que le stock disponible
+            if stock_actuel >= qte:
+                cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers - %s WHERE nom_produit = %s", (qte, nom_produit))
+            else:
+                return f"Refusé : Stock insuffisant pour vendre {qte} casiers (Disponible: {stock_actuel}).", 400
 
-        # 3. Journalisation de l'opération
+        # 3. Journalisation (on garde le nom original du mouvement pour l'affichage)
         cursor.execute("""
             INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (nom_produit, client, telephone, qte, prix, mouv, cat_fixe, date_vente))
+        """, (nom_produit, client, telephone, qte, prix, mouv_raw, cat_fixe, date_vente))
         
         conn.commit()
         return redirect(url_for('affichage'))
