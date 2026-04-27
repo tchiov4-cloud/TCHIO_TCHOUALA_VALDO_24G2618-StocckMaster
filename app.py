@@ -40,43 +40,42 @@ def ajouter():
         nom_produit = request.form.get('produit').strip()
         client = request.form.get('client', 'Anonyme').strip()
         telephone = request.form.get('telephone', 'N/A').strip()
+        date_vente = request.form.get('date_vente')
+        mouv = request.form.get('type_mouvement', '').lower()
+        cat_fixe = request.form.get('type_categorie')
         
         try:
             qte = int(request.form.get('qte', 0))
             prix = float(request.form.get('pu', 0))
         except:
             qte, prix = 0, 0
-            
-        mouv = request.form.get('type_mouvement', '').lower()
-        cat_fixe = request.form.get('type_categorie') 
-        date_vente = request.form.get('date_vente')
 
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Vérifier le stock actuel avant action
+        # 1. Récupérer le niveau actuel du stock
         cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom_produit,))
-        res = cursor.fetchone()
+        result = cursor.fetchone()
         
-        # Si le produit n'existe pas, on l'initialise à 100 selon ta logique
-        if not res:
+        # Initialisation automatique à 100 si le produit est nouveau
+        if not result:
             cursor.execute("INSERT INTO produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
             stock_actuel = 100
         else:
-            stock_actuel = res['quantite_casiers']
+            stock_actuel = result['quantite_casiers']
 
-        # 2. Appliquer la logique métier
+        # 2. Logique Métier : Entrée autorisée uniquement si stock <= 35
         if "entree" in mouv:
-            # On ne peut augmenter que si le stock est <= 35
             if stock_actuel <= 35:
                 cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
             else:
-                return f"Action refusée : Le stock de {nom_produit} ({stock_actuel}) est suffisant (> 35).", 400
+                return f"Refusé : Le stock de {nom_produit} est suffisant ({stock_actuel} > 35). Pas besoin de réapprovisionner.", 400
         
         elif "sortie" in mouv:
+            # On diminue le stock et on s'assure qu'il ne tombe pas sous 0
             cursor.execute("UPDATE produits SET quantite_casiers = GREATEST(0, quantite_casiers - %s) WHERE nom_produit = %s", (qte, nom_produit))
 
-        # 3. Enregistrer l'opération dans le journal
+        # 3. Journalisation de l'opération
         cursor.execute("""
             INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -90,7 +89,6 @@ def ajouter():
         return f"Erreur : {str(e)}", 500
     finally:
         if conn: conn.close()
-
 # ==========================================
 # 3. ROUTES D'AFFICHAGE
 # ==========================================
@@ -106,16 +104,16 @@ def dashboard():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        cursor.execute("SELECT COUNT(DISTINCT client) as nb FROM ventes WHERE client != 'Anonyme'")
-        total_clients = cursor.fetchone()['nb'] or 0
-
+        # Stock Total Dynamique : Somme des 10 produits (ex: 100x10 = 1000 au début)
         cursor.execute("SELECT SUM(quantite_casiers) as total FROM produits")
         res_stock = cursor.fetchone()
-        stock_total = res_stock['total'] if res_stock['total'] else 0
+        stock_total = res_stock['total'] if res_stock and res_stock['total'] else 0
 
+        # Alertes : Produits sous le seuil de 35
         cursor.execute("SELECT nom_produit as produit, quantite_casiers as reste FROM produits WHERE quantite_casiers <= 35 ORDER BY quantite_casiers ASC")
         alertes_list = cursor.fetchall()
 
+        # Flux financiers et volumes
         cursor.execute("SELECT type_mouvement, quantite, prix_unitaire FROM ventes")
         mouvements = cursor.fetchall()
 
@@ -129,6 +127,9 @@ def dashboard():
             elif "sortie" in mouv:
                 t_sorties += q
                 v_sorties += (q * p)
+
+        cursor.execute("SELECT COUNT(DISTINCT client) as nb FROM ventes WHERE client != 'Anonyme'")
+        total_clients = cursor.fetchone()['nb'] or 0
 
         return render_template('dashboard.html', clients=total_clients, stock_total=stock_total, 
                                alertes=alertes_list, t_entrees=t_entrees, v_entrees=v_entrees, 
