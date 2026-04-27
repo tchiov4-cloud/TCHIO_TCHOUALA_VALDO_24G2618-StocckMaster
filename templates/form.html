@@ -14,7 +14,7 @@
             --text-dim: #94a3b8;
             --input-bg: #0f172a;
             --border: #334155;
-            --nav-bg: rgba(30, 41, 59, 0.9);
+            --nav-bg: rgba(30, 41, 59, 0.95);
         }
 
         body {
@@ -39,20 +39,9 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
         }
 
-        h1 {
-            color: var(--accent);
-            text-align: center;
-            margin-bottom: 25px;
-            font-weight: 800;
-            font-size: 1.5rem;
-        }
+        h1 { color: var(--accent); text-align: center; margin-bottom: 25px; font-weight: 800; font-size: 1.5rem; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         .full-width { grid-column: span 2; }
         label { color: var(--text-dim); font-size: 0.8rem; font-weight: 600; }
@@ -63,12 +52,9 @@
             border-radius: 12px;
             padding: 12px;
             color: white;
-            font-family: inherit;
             outline: none;
             font-size: 14px;
         }
-
-        input:focus, select:focus { border-color: var(--accent); }
 
         .btn-submit {
             grid-column: span 2;
@@ -78,55 +64,63 @@
             padding: 16px;
             border-radius: 12px;
             font-weight: 800;
-            font-size: 1rem;
             cursor: pointer;
             margin-top: 10px;
         }
 
-        /* --- NAVIGATION MOBILE (PAR DÉFAUT CACHÉE) --- */
+        /* --- LOGIQUE D'AFFICHAGE CONDITIONNEL --- */
+
+        /* 1. Caché par défaut sur Ordinateur */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 65px;
-            background: var(--nav-bg);
-            backdrop-filter: blur(10px);
-            display: none; /* CACHÉ SUR PC */
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid var(--border);
-            z-index: 1000;
-            padding-bottom: env(safe-area-inset-bottom);
+            display: none; 
         }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: var(--text-dim);
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .nav-item.active { color: var(--accent); }
-
-        /* --- RÉGLAGES POUR MOBILE --- */
+        /* 2. Affiché UNIQUEMENT sur téléphone (max 768px) */
         @media (max-width: 768px) {
             body { 
                 align-items: flex-start; 
-                padding-bottom: 90px; /* Espace pour la barre de nav */
+                padding-bottom: 90px; /* On laisse de la place pour la barre */
             }
-            
-            .bottom-nav { 
-                display: flex; /* S'affiche sur mobile */
+
+            .bottom-nav {
+                display: flex; /* On l'active ici */
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 70px;
+                background: var(--nav-bg);
+                backdrop-filter: blur(10px);
+                justify-content: space-around;
+                align-items: center;
+                border-top: 1px solid var(--border);
+                z-index: 1000;
             }
 
             .form-grid { grid-template-columns: 1fr; }
             .full-width { grid-column: span 1; }
-            .card { padding: 20px; }
+
+            .nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-decoration: none;
+                color: var(--text-dim);
+                font-size: 0.7rem;
+            }
+            .nav-item.active { color: var(--accent); }
         }
+        
+        /* Lien retour classique pour PC */
+        .pc-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        @media (max-width: 768px) { .pc-link { display: none; } }
     </style>
 </head>
 <body>
@@ -137,7 +131,7 @@
     <form action="/ajouter" method="POST" class="form-grid">
         <div class="form-group">
             <label>Date</label>
-            <input type="date" name="date_vente" required>
+            <input type="date" name="date_vente" id="dateInput" required>
         </div>
 
         <div class="form-group">
@@ -166,7 +160,7 @@
 
         <div class="form-group">
             <label>Quantité</label>
-            <input type="number" name="qte" placeholder="Ex: 5" required>
+            <input type="number" name="qte" placeholder="Nombre" required>
         </div>
 
         <div class="form-group">
@@ -174,42 +168,23 @@
             <input type="number" name="pu" placeholder="FCFA" required>
         </div>
 
-        <div class="form-group">
-            <label>Nom du Client</label>
-            <input type="text" name="client" placeholder="Optionnel">
-        </div>
+        <input type="hidden" name="type_categorie" value="boisson">
 
-        <div class="form-group">
-            <label>Téléphone</label>
-            <input type="tel" name="telephone" placeholder="Optionnel">
-        </div>
-
-        <input type="hidden" name="type_categorie" value="alcoolisees">
-
-        <button type="submit" class="btn-submit">Valider l'opération</button>
+        <button type="submit" class="btn-submit">Valider</button>
     </form>
     
-    <style>@media (max-width: 768px) { .pc-back { display: none; } }</style>
-    <a href="/dashboard" class="pc-back" style="display: block; text-align: center; margin-top: 15px; color: var(--text-dim); text-decoration: none; font-size: 0.8rem;">← Retour</a>
+    <a href="/dashboard" class="pc-link">← Retour au Dashboard</a>
 </div>
 
 <nav class="bottom-nav">
-    <a href="/dashboard" class="nav-item">
-        <span>🏠</span><span>Accueil</span>
-    </a>
-    <a href="/form" class="nav-item active">
-        <span>📝</span><span>Saisie</span>
-    </a>
-    <a href="/analyse" class="nav-item">
-        <span>📊</span><span>Analyse</span>
-    </a>
-    <a href="/affichage" class="nav-item">
-        <span>📜</span><span>Histo.</span>
-    </a>
+    <a href="/dashboard" class="nav-item"><span>🏠</span><span>Accueil</span></a>
+    <a href="/form" class="nav-item active"><span>📝</span><span>Saisie</span></a>
+    <a href="/analyse" class="nav-item"><span>📊</span><span>Analyse</span></a>
+    <a href="/affichage" class="nav-item"><span>📜</span><span>Histo.</span></a>
 </nav>
 
 <script>
-    document.querySelector('input[type="date"]').valueAsDate = new Date();
+    document.getElementById('dateInput').valueAsDate = new Date();
 </script>
 
 </body>
