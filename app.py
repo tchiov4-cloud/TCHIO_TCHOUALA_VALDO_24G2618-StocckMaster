@@ -78,13 +78,13 @@ def ajouter():
         cursor = conn.cursor(dictionary=True)
 
         # 1. On s'assure que le produit existe en stock
-        cursor.execute("INSERT IGNORE INTO stocks_produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
+        cursor.execute("INSERT IGNORE INTO produits (nom_produit, quantite_casiers) VALUES (%s, 100)", (nom_produit,))
         
         # 2. Mise à jour du stock
         if "entree" in mouv:
-            cursor.execute("UPDATE stocks_produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
+            cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
         elif "sortie" in mouv:
-            cursor.execute("UPDATE stocks_produits SET quantite_casiers = GREATEST(0, quantite_casiers - %s) WHERE nom_produit = %s", (qte, nom_produit))
+            cursor.execute("UPDATE produits SET quantite_casiers = GREATEST(0, quantite_casiers - %s) WHERE nom_produit = %s", (qte, nom_produit))
 
         # 3. Enregistrement historique
         cursor.execute("""
@@ -167,7 +167,7 @@ def analyse():
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT nom_produit, quantite_casiers FROM stocks_produits")
+        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
         stocks_db = cursor.fetchall()
 
         analyse_produits = []
@@ -204,7 +204,7 @@ def stats():
         })
 
         # 1. DONNÉES POUR LES CAMEMBERTS
-        cursor.execute("SELECT nom_produit, quantite_casiers FROM stocks_produits")
+        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
         cat_stock = {r['nom_produit']: float(r['quantite_casiers']) for r in cursor.fetchall()}
 
         cursor.execute("SELECT produit, SUM(quantite) as total FROM ventes WHERE LOWER(type_mouvement)='sortie' GROUP BY produit")
@@ -286,7 +286,7 @@ def dashboard():
         total_clients = res_clients['nb'] if res_clients else 0
 
         # 2. Récupération du STOCK TOTAL (Tous les produits cumulés)
-        cursor.execute("SELECT SUM(quantite_casiers) as total FROM stocks_produits")
+        cursor.execute("SELECT SUM(quantite_casiers) as total FROM produits")
         res_stock = cursor.fetchone()
         stock_total = res_stock['total'] if res_stock['total'] else 0
 
@@ -294,7 +294,7 @@ def dashboard():
         # On les trie du plus petit au plus grand pour voir l'urgence en premier
         cursor.execute("""
             SELECT nom_produit as produit, quantite_casiers as reste 
-            FROM stocks_produits 
+            FROM produits 
             WHERE quantite_casiers <= 35
             ORDER BY quantite_casiers ASC
         """)
