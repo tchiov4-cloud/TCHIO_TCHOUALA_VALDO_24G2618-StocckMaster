@@ -34,54 +34,33 @@ def fig_to_b64(fig):
 # ==========================================
 @app.route('/ajouter', methods=['POST']) 
 def ajouter():
-    conn = None
-    try:
-        # Récupération propre
-        nom_produit = request.form.get('produit').strip()
-        mouv_raw = request.form.get('type_mouvement', '').lower().strip()
-        
-        try:
-            qte = int(request.form.get('qte', 0))
-            prix = float(request.form.get('pu', 0))
-        except:
-            qte, prix = 0, 0
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    # 1. On récupère les infos du formulaire
+    nom = request.form.get('produit')
+    qte = int(request.form.get('qte', 0))
+    mouv = request.form.get('type_mouvement').lower()
 
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-
-        # --- LOGIQUE DE MISE À JOUR ---
-        if "entree" in mouv_raw:
-            # On augmente le stock du produit spécifique
-            cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
-        
-        elif "sortie" in mouv_raw or "vente" in mouv_raw:
-            # On diminue le stock du produit spécifique
-            # C'est ce calcul qui fera passer le produit en "CRITIQUE" dans votre tableau HTML
-            cursor.execute("""
-                UPDATE produits 
-                SET quantite_casiers = GREATEST(0, quantite_casiers - %s) 
-                WHERE nom_produit = %s
-            """, (qte, nom_produit))
-
-        # --- JOURNALISATION ---
+    # 2. AUTOMATISME : Si c'est une vente, on baisse le stock DIRECTEMENT
+    if "sortie" in mouv or "vente" in mouv:
         cursor.execute("""
-            INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (nom_produit, 
-              request.form.get('client', 'Anonyme'), 
-              request.form.get('telephone', 'N/A'), 
-              qte, prix, mouv_raw, 
-              request.form.get('type_categorie'), 
-              request.form.get('date_vente')))
-        
-        conn.commit()
-        return redirect(url_for('affichage'))
+            UPDATE produits 
+            SET quantite_casiers = GREATEST(0, quantite_casiers - %s) 
+            WHERE nom_produit = %s
+        """, (qte, nom))
 
-    except Exception as e:
-        if conn: conn.rollback()
-        return f"Erreur : {str(e)}", 500
-    finally:
-        if conn: conn.close()
+    # 3. On enregistre l'historique dans la table ventes
+    cursor.execute("""
+        INSERT INTO ventes (produit, quantite, type_mouvement, date_vente, prix_unitaire)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (nom, qte, mouv, request.form.get('date_vente'), request.form.get('pu')))
+
+    conn.commit() # On valide tout d'un coup
+    conn.close()
+    
+    # 4. On redirige vers le dashboard : les chiffres seront déjà mis à jour !
+    return redirect(url_for('dashboard'))
 # ==========================================
 # 3. ROUTES D'AFFICHAGE
 # ==========================================
