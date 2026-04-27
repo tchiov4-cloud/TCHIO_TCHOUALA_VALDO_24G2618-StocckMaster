@@ -165,62 +165,66 @@ def affichage():
         if conn: conn.close()
 
 @app.route('/stats')
-@app.route('/stats')
 def stats():
     conn = None
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
-        # Style sombre pour correspondre à ton Dashboard
+        
+        # Style sombre pour le dashboard
         plt.rcParams.update({
             "figure.facecolor": "#1e293b", "axes.facecolor": "#1e293b", 
             "text.color": "#f8fafc", "axes.labelcolor": "#f8fafc", 
             "xtick.color": "#94a3b8", "ytick.color": "#94a3b8"
         })
 
-        # Données Stocks
+        # --- 1. DONNÉES : Stock Actuel (Camembert) ---
         cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
         res_s = cursor.fetchall()
         noms_s = [r['nom_produit'] for r in res_s]
         qtes_s = [float(r['quantite_casiers']) for r in res_s]
 
-        # Données Ventes
-        cursor.execute("SELECT produit, SUM(quantite) as total FROM ventes WHERE LOWER(type_mouvement)='sortie' GROUP BY produit")
-        res_v = cursor.fetchall()
-        noms_v = [r['produit'] for r in res_v]
-        qtes_v = [float(r['total']) for r in res_v]
+        # --- 2. DONNÉES : Ventes par Mois (Barres) ---
+        # On extrait le mois et on somme les quantités de 'sortie'
+        query_mois = """
+            SELECT MONTH(date_vente) as mois, SUM(quantite) as total 
+            FROM ventes 
+            WHERE LOWER(type_mouvement) = 'sortie' 
+            GROUP BY MONTH(date_vente)
+            ORDER BY MONTH(date_vente)
+        """
+        cursor.execute(query_mois)
+        res_m = cursor.fetchall()
+        
+        # Mapping des noms de mois en français
+        mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"]
+        labels_m = [mois_noms[int(r['mois'])-1] for r in res_m]
+        volumes_m = [float(r['total']) for r in res_m]
 
         pies = []
         bars = []
 
-        # 1. Camembert : Répartition du Stock Actuel
+        # Génération du Camembert (Stocks)
         if qtes_s:
             fig1, ax1 = plt.subplots(figsize=(7, 7))
             ax1.pie(qtes_s, labels=noms_s, autopct='%1.1f%%', startangle=140, colors=['#38bdf8','#10b981','#f43f5e','#fbbf24'])
-            ax1.set_title("RÉPARTITION DU STOCK", color="#38bdf8", fontweight='bold')
+            ax1.set_title("RÉPARTITION ACTUELLE DU STOCK", color="#38bdf8", fontweight='bold')
             pies.append(fig_to_b64(fig1))
 
-        # 2. Histogramme (Barres) : Comparaison des quantités en stock
-        if qtes_s:
+        # Génération de l'Histogramme (Ventes par mois)
+        if volumes_m:
             fig2, ax2 = plt.subplots(figsize=(10, 5))
-            ax2.bar(noms_s, qtes_s, color='#38bdf8', alpha=0.8)
-            ax2.axhline(y=35, color='#f43f5e', linestyle='--', label="Seuil Critique (35)")
-            ax2.set_title("NIVEAU DE STOCK PAR PRODUIT", fontweight='bold')
-            ax2.legend()
+            ax2.bar(labels_m, volumes_m, color='#10b981', alpha=0.8)
+            ax2.set_title("ÉVOLUTION DES VENTES MENSUELLES", color="#10b981", fontweight='bold')
+            ax2.set_ylabel("Quantité Vendue (Casiers)")
             bars.append(fig_to_b64(fig2))
-
-        # 3. Barres Horizontales : Top des Ventes
-        if qtes_v:
-            fig3, ax3 = plt.subplots(figsize=(10, 5))
-            ax3.barh(noms_v, qtes_v, color='#10b981')
-            ax3.set_title("VOLUMES VENDUS PAR PRODUIT", fontweight='bold')
-            bars.append(fig_to_b64(fig3))
 
         return render_template('stats.html', pies=pies, bars=bars)
     except Exception as e:
         return f"Erreur stats : {str(e)}"
     finally:
         if conn: conn.close()
+            
 @app.route('/form')
 def form():
     return render_template('form.html')
