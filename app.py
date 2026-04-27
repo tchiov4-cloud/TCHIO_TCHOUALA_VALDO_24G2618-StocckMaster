@@ -41,8 +41,6 @@ def ajouter():
         client = request.form.get('client', 'Anonyme').strip()
         telephone = request.form.get('telephone', 'N/A').strip()
         date_vente = request.form.get('date_vente')
-        
-        # Correction ici : on s'assure de bien capturer le type
         mouv_raw = request.form.get('type_mouvement', '').lower()
         cat_fixe = request.form.get('type_categorie')
         
@@ -55,7 +53,7 @@ def ajouter():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Récupérer le niveau actuel
+        # 1. Récupérer le niveau actuel du stock
         cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom_produit,))
         result = cursor.fetchone()
         
@@ -65,25 +63,25 @@ def ajouter():
         else:
             stock_actuel = result['quantite_casiers']
 
-        # 2. Logique Métier Corrigée
-        # On vérifie "entree" OU "achat" / "sortie" OU "vente" pour être plus flexible
-        is_entree = "entree" in mouv_raw or "achat" in mouv_raw
-        is_sortie = "sortie" in mouv_raw or "vente" in mouv_raw
-
-        if is_entree:
+        # 2. Logique Métier
+        # --- LOGIQUE ENTRÉE (On ne touche pas, reste comme tu l'as voulu) ---
+        if "entree" in mouv_raw:
             if stock_actuel <= 35:
                 cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers + %s WHERE nom_produit = %s", (qte, nom_produit))
             else:
-                return f"Refusé : Stock suffisant ({stock_actuel} > 35).", 400
+                return f"Refusé : Le stock de {nom_produit} est suffisant ({stock_actuel} > 35).", 400
         
-        elif is_sortie:
-            # Vérification de sécurité : ne pas vendre plus que le stock disponible
-            if stock_actuel >= qte:
-                cursor.execute("UPDATE produits SET quantite_casiers = quantite_casiers - %s WHERE nom_produit = %s", (qte, nom_produit))
-            else:
-                return f"Refusé : Stock insuffisant pour vendre {qte} casiers (Disponible: {stock_actuel}).", 400
+        # --- LOGIQUE VENTE (Modifiée pour toujours diminuer) ---
+        elif "sortie" in mouv_raw or "vente" in mouv_raw:
+            # On soustrait directement la quantité vendue
+            # GREATEST(0, ...) évite que le stock devienne négatif si on vend plus que prévu
+            cursor.execute("""
+                UPDATE produits 
+                SET quantite_casiers = GREATEST(0, quantite_casiers - %s) 
+                WHERE nom_produit = %s
+            """, (qte, nom_produit))
 
-        # 3. Journalisation (on garde le nom original du mouvement pour l'affichage)
+        # 3. Journalisation de l'opération
         cursor.execute("""
             INSERT INTO ventes (produit, client, telephone, quantite, prix_unitaire, type_mouvement, type_categorie, date_vente)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
