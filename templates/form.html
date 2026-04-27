@@ -14,6 +14,7 @@
             --text-dim: #94a3b8;
             --input-bg: #0f172a;
             --border: #334155;
+            --nav-bg: rgba(30, 41, 59, 0.8);
         }
 
         body {
@@ -23,15 +24,16 @@
             margin: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Changé pour mobile */
             min-height: 100vh;
             padding: 20px;
+            padding-bottom: 80px; /* Espace pour la barre de nav mobile */
         }
 
         .card {
             background: var(--card);
             border-radius: 24px;
-            padding: 40px;
+            padding: 30px;
             width: 100%;
             max-width: 600px;
             border: 1px solid rgba(255,255,255,0.05);
@@ -41,15 +43,15 @@
         h1 {
             color: var(--accent);
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             font-weight: 800;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
         }
 
         .form-group {
@@ -58,15 +60,9 @@
             gap: 8px;
         }
 
-        .full-width {
-            grid-column: span 2;
-        }
+        .full-width { grid-column: span 2; }
 
-        label {
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
+        label { color: var(--text-dim); font-size: 0.8rem; font-weight: 600; }
 
         input, select {
             background: var(--input-bg);
@@ -76,13 +72,10 @@
             color: white;
             font-family: inherit;
             outline: none;
-            transition: all 0.3s ease;
+            font-size: 14px;
         }
 
-        input:focus, select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-        }
+        input:focus, select:focus { border-color: var(--accent); }
 
         .btn-submit {
             grid-column: span 2;
@@ -95,56 +88,44 @@
             font-size: 1rem;
             cursor: pointer;
             margin-top: 10px;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
+        /* BARRE DE NAVIGATION MOBILE */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .btn-back {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: var(--text-dim);
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-decoration: none;
-            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: 0.3s;
         }
 
-        .btn-back:hover {
-            color: var(--text);
-        }
+        .nav-item i { font-size: 1.2rem; margin-bottom: 4px; }
+        .nav-item.active { color: var(--accent); }
 
-        /* Désactiver les flèches sur les inputs nombre */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        @media (max-width: 768px) {
-            nav {
-                display: none; /* Cache la sidebar sur mobile ou transforme-la en menu burger */
-            }
-            main {
-                margin-left: 0;
-                width: 100%;
-                padding: 15px;
-            }
-            .kpi-grid {
-                grid-template-columns: 1fr; /* 1 carte par ligne sur mobile */
-            }
-            .main-grid {
-                grid-template-columns: 1fr; /* Tableaux et actions l'un sous l'autre */
-            }
-        }
-
-        /* Pour les Stats : empiler les graphiques */
-        @media (max-width: 900px) {
-            .grid-charts {
-            grid-template-columns: 1fr !important;
-            }
+        @media (max-width: 480px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .card { padding: 20px; }
+            h1 { font-size: 1.3rem; }
         }
     </style>
 </head>
@@ -153,20 +134,23 @@
 <div class="card">
     <h1>Nouvelle Opération</h1>
     
-    <form action="/ajouter"  method="POST" class="form-grid">
-        <div class="form-group">
-            <label>ID Opération</label>
-            <input type="text" name="id" placeholder="Auto" readonly>
-        </div>
-
+    <form action="/ajouter" method="POST" class="form-grid">
         <div class="form-group">
             <label>Date</label>
             <input type="date" name="date_vente" required>
         </div>
 
+        <div class="form-group">
+            <label>Mouvement</label>
+            <select name="type_mouvement" required>
+                <option value="sortie">📤 Sortie (Vente)</option>
+                <option value="entree">📥 Entrée (Stock)</option>
+            </select>
+        </div>
+
         <div class="form-group full-width">
             <label>Sélectionner le Produit :</label>
-            <select name="produit" required style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; color: white;">
+            <select name="produit" required>
                 <option value="Malta">Malta</option>
                 <option value="Isembeck">Isembeck</option>
                 <option value="Castel">Castel</option>
@@ -178,53 +162,54 @@
                 <option value="Guinness">Guinness</option>
                 <option value="Kadji">Kadji</option>
             </select>
-            
-        </div>
-
-        <div class="form-group">
-            <label>Type de Catégorie</label>
-            <select name="type_categorie" required>
-                <option value="alcoolisees">🍷 Alcoolisées</option>
-                <option value="non alcoolisees">🥤 Non Alcoolisées</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Mouvement</label>
-            <select name="type_mouvement" required>
-                <option value="entree">📥 Entrée (Stock)</option>
-                <option value="sortie">📤 Sortie (Vente)</option>
-            </select>
         </div>
 
         <div class="form-group">
             <label>Quantité</label>
-            <input type="number" name="qte" placeholder="nbres casiers ou palettes" required>
+            <input type="number" name="qte" placeholder="Ex: 5" required>
         </div>
 
         <div class="form-group">
-            <label>Prix Unitaire (FCFA)</label>
-            <input type="number" name="pu" placeholder="0" required>
+            <label>Prix Unitaire</label>
+            <input type="number" name="pu" placeholder="FCFA" required>
         </div>
 
         <div class="form-group">
             <label>Nom du Client</label>
-            <input type="text" name="client" placeholder="Nom du client">
+            <input type="text" name="client" placeholder="Optionnel">
         </div>
 
         <div class="form-group">
             <label>Téléphone</label>
-            <input type="tel" name="telephone" placeholder="Numéro de contact">
+            <input type="tel" name="telephone" placeholder="Optionnel">
         </div>
 
-        <button type="submit" class="btn-submit">Enregistrer l'opération</button>
-    </form>
+        <input type="hidden" name="type_categorie" value="alcoolisees">
 
-    <a href="/dashboard" class="btn-back">← Retour au Tableau de Bord</a>
+        <button type="submit" class="btn-submit">Valider l'opération</button>
+    </form>
 </div>
 
+<nav class="bottom-nav">
+    <a href="/dashboard" class="nav-item">
+        <span>🏠</span>
+        <span>Accueil</span>
+    </a>
+    <a href="/form" class="nav-item active">
+        <span>📝</span>
+        <span>Saisie</span>
+    </a>
+    <a href="/analyse" class="nav-item">
+        <span>📊</span>
+        <span>Analyse</span>
+    </a>
+    <a href="/affichage" class="nav-item">
+        <span>📜</span>
+        <span>Histo.</span>
+    </a>
+</nav>
+
 <script>
-    // Par défaut, mettre la date du jour
     document.querySelector('input[type="date"]').valueAsDate = new Date();
 </script>
 
