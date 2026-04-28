@@ -6,71 +6,6 @@
     <title>StockMaster</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* --- NAVIGATION MOBILE --- */
-
-/* 1. Caché par défaut sur ordinateur */
-    .mobile-nav {
-        display: none;
-    }
-
-/* 2. Uniquement pour Tablettes et Téléphones (max 1024px) */
-    @media (max-width: 1024px) {
-    
-    /* On cache la sidebar latérale si elle existe sur la page */
-        nav:not(.mobile-nav) {
-            display: none !important;
-        }
-
-    /* On ajuste le contenu principal pour qu'il ne soit pas caché par la barre */
-    main, .container {
-        margin-left: 0 !important;
-        width: 100% !important;
-        padding-bottom: 80px !important; /* Espace pour la barre */
-    }
-
-    /* Activation de la barre du bas */
-    .mobile-nav {
-        display: flex;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 70px;
-        background: var(--card); /* Utilise la couleur de tes cartes */
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        z-index: 9999;
-        backdrop-filter: blur(10px); /* Effet flou moderne */
-    }
-
-    .nav-item {
-        text-decoration: none;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: var(--text-dim);
-        transition: 0.3s;
-    }
-
-    .nav-item .icon {
-        font-size: 1.2rem;
-        margin-bottom: 4px;
-    }
-
-    .nav-item .label {
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Style pour le lien actif */
-    .nav-item:hover, .nav-item.active {
-        color: var(--accent);
-    }
-}
         :root {
             --bg: #0f172a;
             --card: #1e293b;
@@ -78,6 +13,7 @@
             --danger: #f43f5e;
             --success: #10b981;
             --text: #f8fafc;
+            --text-dim: #94a3b8;
         }
 
         body {
@@ -88,24 +24,80 @@
             display: flex;
         }
 
-        /* Sidebar */
-        nav {
+        /* Sidebar pour desktop */
+        .sidebar {
             width: 260px;
             height: 100vh;
             background: var(--card);
             padding: 30px 20px;
             border-right: 1px solid rgba(255,255,255,0.05);
             position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
         }
 
-        nav h2 { color: var(--accent); margin-bottom: 40px; font-size: 1.5rem; }
-        nav a { display: block; color: #94a3b8; text-decoration: none; padding: 12px; border-radius: 8px; margin-bottom: 10px; transition: 0.3s; }
-        nav a:hover, nav a.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); }
+        .sidebar h2 { 
+            color: var(--accent); 
+            margin-bottom: 40px; 
+            font-size: 1.5rem; 
+        }
+
+        .sidebar a { 
+            display: block; 
+            color: #94a3b8; 
+            text-decoration: none; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            transition: 0.3s; 
+        }
+
+        .sidebar a:hover, .sidebar a.active { 
+            background: rgba(56, 189, 248, 0.1); 
+            color: var(--accent); 
+        }
 
         /* Main Content */
-        main { margin-left: 280px; padding: 40px; width: calc(100% - 280px); }
+        main { 
+            margin-left: 280px; 
+            padding: 40px; 
+            width: calc(100% - 280px); 
+        }
 
-        /* --- GRILLE KPI AJUSTÉE (3 PAR LIGNE) --- */
+        /* Flash messages */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--success);
+        }
+
+        .flash-error {
+            background: rgba(244, 63, 94, 0.1);
+            border-left: 3px solid var(--danger);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--danger);
+        }
+
+        .flash-warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 3px solid #fbbf24;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: #fbbf24;
+        }
+
+        /* KPI Grid */
         .kpi-grid { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
@@ -113,7 +105,6 @@
             margin-bottom: 40px; 
         }
 
-        /* --- RECTANGLES DIMINUÉS --- */
         .kpi-card { 
             background: var(--card); 
             padding: 15px 20px; 
@@ -124,20 +115,69 @@
             justify-content: center;
         }
         
-        .kpi-card span { color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
-        .kpi-card h3 { font-size: 1.4rem; margin: 5px 0 0 0; font-weight: 800; }
+        .kpi-card span { 
+            color: #94a3b8; 
+            font-size: 0.75rem; 
+            text-transform: uppercase; 
+            font-weight: 600; 
+        }
+
+        .kpi-card h3 { 
+            font-size: 1.4rem; 
+            margin: 5px 0 0 0; 
+            font-weight: 800; 
+        }
 
         /* Grid Charts & Tables */
-        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-        .glass-card { background: var(--card); border-radius: 24px; padding: 30px; border: 1px solid rgba(255,255,255,0.05); }
+        .main-grid { 
+            display: grid; 
+            grid-template-columns: 2fr 1fr; 
+            gap: 30px; 
+        }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { text-align: left; color: #94a3b8; font-size: 0.8rem; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        td { padding: 15px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+        .glass-card { 
+            background: var(--card); 
+            border-radius: 24px; 
+            padding: 30px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+        }
 
-        .status_badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; }
-        .status_critique { background: rgba(244, 63, 94, 0.2); color: var(--danger); }
-        .status_bon { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+
+        th { 
+            text-align: left; 
+            color: #94a3b8; 
+            font-size: 0.8rem; 
+            padding: 12px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+        }
+
+        td { 
+            padding: 15px 12px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            font-size: 0.9rem; 
+        }
+
+        .status_badge { 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 0.7rem; 
+            font-weight: 800; 
+        }
+
+        .status_critique { 
+            background: rgba(244, 63, 94, 0.2); 
+            color: var(--danger); 
+        }
+
+        .status_bon { 
+            background: rgba(16, 185, 129, 0.2); 
+            color: var(--success); 
+        }
 
         .btn-action {
             background: var(--accent);
@@ -149,157 +189,193 @@
             font-size: 0.8rem;
             display: inline-block;
             margin-top: 10px;
+            transition: 0.3s;
         }
 
-        @media (max-width: 768px) {
-            nav {
-                display: none; /* Cache la sidebar sur mobile ou transforme-la en menu burger */
+        .btn-action:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                display: none;
             }
+
             main {
                 margin-left: 0;
                 width: 100%;
-                padding: 15px;
+                padding: 20px;
+                padding-bottom: 80px;
             }
+
             .kpi-grid {
-                grid-template-columns: 1fr; /* 1 carte par ligne sur mobile */
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
             }
+
             .main-grid {
-                grid-template-columns: 1fr; /* Tableaux et actions l'un sous l'autre */
+                grid-template-columns: 1fr;
+                gap: 20px;
             }
         }
 
-        /* Pour les Stats : empiler les graphiques */
-        @media (max-width: 900px) {
-            .grid-charts {
-            grid-template-columns: 1fr !important;
-            }
-        }
         @media (max-width: 768px) {
-            nav { display: none; } /* On cache la barre latérale */
-            main { margin-left: 0; width: 100%; padding: 10px; } /* Le contenu prend toute la place */
+            main {
+                padding: 15px;
+                padding-bottom: 80px;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-card h3 {
+                font-size: 1.2rem;
+            }
+
+            .glass-card {
+                padding: 20px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Sidebar pour desktop -->
+    <nav class="sidebar">
+        <h2>StockMaster 📦</h2>
+        <a href="/dashboard" class="active">🏠 Dashboard</a>
+        <a href="/stats">📊 Statistiques</a>
+        <a href="/analyse">🧠 Analyse</a>
+        <a href="/form">📥 Nouvelle commande</a>
+        <a href="/affichage">📜 Historique</a>
+    </nav>
 
-    <nav class="mobile-nav">
-    <a href="/dashboard" class="nav-item">
-        <span class="icon">🏠</span>
-        <span class="label">Accueil</span>
-    </a>
-    <a href="/stats" class="nav-item">
-        <span class="icon">📊</span>
-        <span class="label">Stats</span>
-    </a>
-    <a href="/analyse" class="nav-item">
-        <span class="icon">🧠</span>
-        <span class="label">Analyse</span>
-    </a>
-    <a href="/form" class="nav-item">
-        <span class="icon">📥</span>
-        <span class="label">Saisie</span>
-    </a>
-    <a href="/affichage" class="nav-item">
-        <span class="icon">📜</span>
-        <span class="label">Histo.</span>
-    </a>
-</nav>
+    <!-- Barre de navigation mobile (incluse) -->
+    {% include 'navbar.html' %}
 
-<nav>
-    <h2>StockMaster 📦</h2>
-    <a href="#" class="active">🏠 Dashboard</a>
-    <a href="/stats">📊 Statistiques</a>
-    <a href="/analyse">🧠 Analyse</a>
-    <a href="/form">📥 Nouvelle commande</a>
-</nav>
+    <main>
+        <header style="margin-bottom: 30px;">
+            <h1>Bonjour, Gestionnaire 👋</h1>
+            <p style="color: #94a3b8;">Voici l'état de votre business aujourd'hui.</p>
+        </header>
 
-<main>
-    <header style="margin-bottom: 30px;">
-        <h1>Bonjour, Gestionnaire 👋</h1>
-        <p style="color: #94a3b8;">Voici l'état de votre business aujourd'hui.</p>
-    </header>
+        <!-- Affichage des messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <div class="kpi-grid">
-        <div class="kpi-card">
-            <span>👥 Clients Totaux</span>
-            <h3>{{ clients }}</h3>
-        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <span>👥 Clients Totaux</span>
+                <h3>{{ clients }}</h3>
+            </div>
 
-        <div class="kpi-card">
-            <span>⚠️ Alertes Stock</span>
-            <h3 style="color: var(--danger);">{{ alertes|length }}</h3>
-        </div>
+            <div class="kpi-card">
+                <span>⚠️ Alertes Stock</span>
+                <h3 style="color: var(--danger);">{{ alertes|length }}</h3>
+            </div>
 
-        
-        <div class="kpi-card" style="border-left: 3px solid var(--success);">
-            <span>📥 Total Entrées</span>
-            <h3>{{ "{:,.0f}".format(t_entrees) }}</h3>
-        </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--success);">
+                <span>📊 Stock Total</span>
+                <h3>{{ "{:,.0f}".format(stock_total) }} <small style="font-size: 0.7rem;">casiers</small></h3>
+            </div>
 
-        <div class="kpi-card" style="border-left: 3px solid var(--success);">
-            <span>💹 Valeur Entrées</span>
-            <h3 style="font-size: 1.2rem;">{{ "{:,.0f}".format(v_entrees) }} <small style="font-size: 0.7rem;">FCFA</small></h3>
-        </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--success);">
+                <span>📥 Total Entrées</span>
+                <h3>{{ "{:,.0f}".format(t_entrees) }} <small style="font-size: 0.7rem;">casiers</small></h3>
+            </div>
 
-        <div class="kpi-card" style="border-left: 3px solid var(--danger);">
-            <span>📤 Total Sorties</span>
-            <h3>{{ "{:,.0f}".format(t_sorties) }}</h3>
-        </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--success);">
+                <span>💹 Valeur Entrées</span>
+                <h3 style="font-size: 1.2rem;">{{ "{:,.0f}".format(v_entrees) }} <small style="font-size: 0.7rem;">FCFA</small></h3>
+            </div>
 
-        <div class="kpi-card" style="border-left: 3px solid var(--danger);">
-            <span>📉 Valeur Sorties</span>
-            <h3 style="font-size: 1.2rem;">{{ "{:,.0f}".format(v_sorties) }} <small style="font-size: 0.7rem;">FCFA</small></h3>
-        </div>
-    </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--danger);">
+                <span>📤 Total Sorties</span>
+                <h3>{{ "{:,.0f}".format(t_sorties) }} <small style="font-size: 0.7rem;">casiers</small></h3>
+            </div>
 
-    <div class="main-grid">
-        <div class="glass-card">
-            <h2 style="margin: 0;">Surveillance des Stocks</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Produit</th>
-                            <th>Reste (Casiers)</th>
-                            <th>Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for alerte in alertes %}
-                        <tr>
-                            <td>{{ alerte.produit }}</td>
-                            <td>{{ alerte.reste }}</td>
-                            <td>
-                                {% if alerte.reste <= 30 %}
-                                    <span class="status_badge status_critique">CRITIQUE</span>
-                                {% else %}
-                                    <span class="status_badge status_bon">BON</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="kpi-card" style="border-left: 3px solid var(--danger);">
+                <span>📉 Valeur Sorties</span>
+                <h3 style="font-size: 1.2rem;">{{ "{:,.0f}".format(v_sorties) }} <small style="font-size: 0.7rem;">FCFA</small></h3>
+            </div>
+
+            <div class="kpi-card">
+                <span>🏆 Chiffre d'Affaires</span>
+                <h3 style="color: var(--success);">{{ "{:,.0f}".format(v_sorties) }} <small style="font-size: 0.7rem;">FCFA</small></h3>
             </div>
         </div>
 
-        <div class="glass-card">
-            <h2>Actions Rapides</h2>
-            <p style="font-size: 0.85rem; color: #94a3b8;">Gérez vos clients ou consultez les graphiques.</p>
-            <a href="/form" class="btn-action">Gérer les Clients</a>
-            <a href="/stats" class="btn-action" style="background: transparent; border: 1px solid var(--accent); color: var(--accent); margin-top: 10px;">Voir Graphiques</a>
-            
-            <div style="margin-top: 30px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px;">
-                <h4 style="margin: 0 0 10px 0; font-size: 0.8rem; color: var(--accent);">DERNIÈRE ALERTE</h4>
-                {% if alertes %}
-                    <p style="font-size: 0.8rem; color: var(--danger); margin: 0;">⚠️ {{ alertes[0].produit }} est critique !</p>
-                {% else %}
-                    <p style="font-size: 0.8rem; color: var(--success); margin: 0;">✅ Tout est sous contrôle.</p>
-                {% endif %}
+        <div class="main-grid">
+            <div class="glass-card">
+                <h2 style="margin: 0;">Surveillance des Stocks</h2>
+                <div style="overflow-x: auto;">
+                    {% if alertes and alertes|length > 0 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th>Reste (Casiers)</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alerte in alertes %}
+                            <tr>
+                                <td>{{ alerte.nom_produit }}</td>
+                                <td>{{ alerte.quantite_casiers }}</td>
+                                <td>
+                                    {% if alerte.quantite_casiers <= 30 %}
+                                        <span class="status_badge status_critique">⚠️ CRITIQUE</span>
+                                    {% else %}
+                                        <span class="status_badge status_bon">✅ BON</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p style="text-align: center; color: var(--text-dim); padding: 40px;">
+                        ✅ Aucun produit en dessous du seuil d'alerte.<br>
+                        Tous les stocks sont suffisants.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h2>Actions Rapides</h2>
+                <p style="font-size: 0.85rem; color: #94a3b8;">Gérez vos ventes ou consultez les graphiques.</p>
+                <a href="/form" class="btn-action">➕ Nouvelle opération</a>
+                <a href="/stats" class="btn-action" style="background: transparent; border: 1px solid var(--accent); color: var(--accent); margin-top: 10px;">📊 Voir Graphiques</a>
+                <a href="/analyse" class="btn-action" style="background: transparent; border: 1px solid var(--success); color: var(--success); margin-top: 10px;">🧠 Analyse avancée</a>
+                
+                <div style="margin-top: 30px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 0.8rem; color: var(--accent);">🔔 DERNIÈRE ALERTE</h4>
+                    {% if alertes %}
+                        <p style="font-size: 0.8rem; color: var(--danger); margin: 0;">
+                            ⚠️ {{ alertes[0].nom_produit }} n'a plus que {{ alertes[0].quantite_casiers }} casiers !
+                        </p>
+                    {% else %}
+                        <p style="font-size: 0.8rem; color: var(--success); margin: 0;">✅ Tout est sous contrôle.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-</main>
-
+    </main>
 </body>
 </html>
