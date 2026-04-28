@@ -32,35 +32,44 @@ def fig_to_b64(fig):
 # ==========================================
 # 2. ROUTES DE TRAITEMENT
 # ==========================================
-@app.route('/ajouter', methods=['POST']) 
+@app.route('/ajouter', methods=['POST'])
 def ajouter():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     
-    # 1. On récupère les infos du formulaire
+    # 1. Récupération des infos du formulaire
     nom = request.form.get('produit')
     qte = int(request.form.get('qte', 0))
     mouv = request.form.get('type_mouvement').lower()
+    date_vente = request.form.get('date_vente')
+    prix_unitaire = request.form.get('pu')
 
-    # 2. AUTOMATISME : Si c'est une vente, on baisse le stock DIRECTEMENT
+    # 2. MISE À JOUR AUTOMATIQUE DU STOCK
     if "sortie" in mouv or "vente" in mouv:
         cursor.execute("""
             UPDATE produits 
-            SET quantite_casiers = GREATEST(0, quantite_casiers - %s) 
+            SET quantite_casiers = GREATEST(0, quantite_casiers - %s)
+            WHERE nom_produit = %s
+        """, (qte, nom))
+    elif "entrée" in mouv or "ajout" in mouv or "achat" in mouv:
+        cursor.execute("""
+            UPDATE produits 
+            SET quantite_casiers = quantite_casiers + %s
             WHERE nom_produit = %s
         """, (qte, nom))
 
-    # 3. On enregistre l'historique dans la table ventes
+    # 3. Enregistrement de l’historique
     cursor.execute("""
         INSERT INTO ventes (produit, quantite, type_mouvement, date_vente, prix_unitaire)
         VALUES (%s, %s, %s, %s, %s)
-    """, (nom, qte, mouv, request.form.get('date_vente'), request.form.get('pu')))
+    """, (nom, qte, mouv, date_vente, prix_unitaire))
 
-    conn.commit() # On valide tout d'un coup
+    conn.commit()
     conn.close()
-    
-    # 4. On redirige vers le dashboard : les chiffres seront déjà mis à jour !
+
+    # 4. Redirection
     return redirect(url_for('dashboard'))
+
 # ==========================================
 # 3. ROUTES D'AFFICHAGE
 # ==========================================
