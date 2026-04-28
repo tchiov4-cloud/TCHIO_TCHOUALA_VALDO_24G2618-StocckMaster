@@ -6,6 +6,217 @@
     <title>Analyses & Statistiques | EliteStock</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* En-tête */
+        .header {
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--accent);
+            transform: translateX(-3px);
+        }
+
+        h1 {
+            color: var(--accent);
+            font-weight: 800;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        /* Sections de graphiques */
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 40px 0 20px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        /* Grille des graphiques */
+        .grid-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+        }
+
+        .chart-card {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        .chart-title {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--card);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .empty-state p {
+            margin: 10px 0;
+            color: var(--text-dim);
+        }
+
+        .empty-state a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            body {
+                padding: 15px;
+                padding-bottom: 80px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1rem;
+            }
+
+            .grid-charts {
+                gap: 15px;
+            }
+
+            .chart-card {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-charts {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                margin-bottom: 20px;
+                padding: 15px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Inclusion de la barre de navigation unifiée -->
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <div class="header">
+            <a href="/dashboard" class="nav-link">← Retour au Tableau de Bord</a>
+            <h1>📈 Analyses de Performance</h1>
+        </div>
+
+        {% if pies or bars %}
+            {% if pies %}
+                <h2 class="section-title">🥧 Répartition Globale du Stock</h2>
+                <div class="grid-charts">
+                    {% for pie in pies %}
+                    <div class="chart-card">
+                        <img src="data:image/png;base64,{{ pie }}" alt="Graphique de répartition du stock">
+                        <div class="chart-title">Distribution des produits en stock</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if bars %}
+                <h2 class="section-title">📊 Évolution des Ventes par Mois</h2>
+                <div class="grid-charts">
+                    {% for bar in bars %}
+                    <div class="chart-card">
+                        <img src="data:image/png;base64,{{ bar }}" alt="Graphique d'évolution des ventes">
+                        <div class="chart-title">Tendance des ventes mensuelles</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>📊 Aucune donnée statistique disponible pour le moment.</p>
+                <p>Pour voir des graphiques, vous devez :</p>
+                <p>• <a href="/init_db">Initialiser la base de données</a> avec des produits de démonstration</p>
+                <p>• <a href="/form">Ajouter des opérations</a> (ventes ou entrées de stock)</p>
+                <p>• Revenir sur cette page après avoir ajouté des données</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyses & Statistiques | EliteStock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
 
         /* --- NAVIGATION MOBILE --- */
 
