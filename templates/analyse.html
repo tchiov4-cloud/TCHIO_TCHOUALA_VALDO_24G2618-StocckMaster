@@ -6,92 +6,95 @@
     <title>Analyse Dynamique | EliteStock</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* --- NAVIGATION MOBILE --- */
-
-/* 1. Caché par défaut sur ordinateur */
-.mobile-nav {
-    display: none;
-}
-
-/* 2. Uniquement pour Tablettes et Téléphones (max 1024px) */
-@media (max-width: 1024px) {
-    
-    /* On cache la sidebar latérale si elle existe sur la page */
-    nav:not(.mobile-nav) {
-        display: none !important;
-    }
-
-    /* On ajuste le contenu principal pour qu'il ne soit pas caché par la barre */
-    main, .container {
-        margin-left: 0 !important;
-        width: 100% !important;
-        padding-bottom: 80px !important; /* Espace pour la barre */
-    }
-
-    /* Activation de la barre du bas */
-    .mobile-nav {
-        display: flex;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 70px;
-        background: var(--card); /* Utilise la couleur de tes cartes */
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        z-index: 9999;
-        backdrop-filter: blur(10px); /* Effet flou moderne */
-    }
-
-    .nav-item {
-        text-decoration: none;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: var(--text-dim);
-        transition: 0.3s;
-    }
-
-    .nav-item .icon {
-        font-size: 1.2rem;
-        margin-bottom: 4px;
-    }
-
-    .nav-item .label {
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Style pour le lien actif */
-    .nav-item:hover, .nav-item.active {
-        color: var(--accent);
-    }
-}
         :root {
-            --bg: #0f172a; --card: #1e293b; 
-            --danger: #f43f5e; --warning: #fbbf24; --success: #10b981;
-            --text: #f8fafc; --accent: #38bdf8;
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --danger: #f43f5e; 
+            --warning: #fbbf24; 
+            --success: #10b981;
+            --text: #f8fafc; 
+            --accent: #38bdf8;
+            --text-dim: #94a3b8;
         }
+
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--bg); color: var(--text); 
-            padding: 20px; margin: 0;
-        }
-        .container { max-width: 800px; margin: 40px auto; }
-        h1 { font-weight: 800; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-        
-        .card { 
-            background: var(--card); border-radius: 16px; padding: 25px; 
-            margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 20px; 
+            margin: 0;
         }
 
-        .info { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; }
-        .info span:last-child { color: #94a3b8; font-size: 0.9rem; }
+        .container { 
+            max-width: 800px; 
+            margin: 40px auto; 
+        }
+
+        h1 { 
+            font-weight: 800; 
+            margin-bottom: 30px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+
+        /* Flash messages */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--success);
+        }
+
+        .flash-error {
+            background: rgba(244, 63, 94, 0.1);
+            border-left: 3px solid var(--danger);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--danger);
+        }
+
+        .flash-warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 3px solid var(--warning);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--warning);
+        }
+
+        .card { 
+            background: var(--card); 
+            border-radius: 16px; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .info { 
+            display: flex; 
+            justify-content: space-between; 
+            font-weight: 700; 
+            font-size: 1.1rem; 
+        }
+
+        .info span:last-child { 
+            color: #94a3b8; 
+            font-size: 0.9rem; 
+        }
 
         /* CONTENEUR DE LA BARRE */
         .progress-container { 
@@ -125,86 +128,152 @@
         }
 
         .conseil { 
-            font-size: 0.9rem; color: #94a3b8; 
-            margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); 
-            padding-top: 15px; line-height: 1.5;
+            font-size: 0.9rem; 
+            color: #94a3b8; 
+            margin-top: 15px; 
+            border-top: 1px solid rgba(255,255,255,0.05); 
+            padding-top: 15px; 
+            line-height: 1.5;
         }
         
         .status-tag {
-            font-size: 0.7rem; padding: 4px 8px; border-radius: 6px;
-            text-transform: uppercase; margin-left: 10px;
+            font-size: 0.7rem; 
+            padding: 4px 8px; 
+            border-radius: 6px;
+            text-transform: uppercase; 
+            margin-left: 10px;
         }
 
         .btn-back {
-            display: inline-block; margin-top: 20px; color: var(--accent);
-            text-decoration: none; font-weight: 600; transition: 0.3s;
+            display: inline-block; 
+            margin-top: 20px; 
+            color: var(--accent);
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: 0.3s;
         }
-        .btn-back:hover { opacity: 0.8; transform: translateX(-5px); }
+
+        .btn-back:hover { 
+            opacity: 0.8; 
+            transform: translateX(-5px); 
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--card);
+            border-radius: 24px;
+            margin: 20px 0;
+        }
+
+        .empty-state p {
+            margin: 10px 0;
+            color: var(--text-dim);
+        }
+
+        .empty-state a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            body {
+                padding: 15px;
+                padding-bottom: 80px;
+            }
+
+            .container {
+                margin: 20px auto;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .info {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .status-tag {
+                margin-left: 0;
+                display: inline-block;
+                margin-top: 5px;
+            }
+        }
     </style>
 </head>
 <body>
-    <nav class="mobile-nav">
-    <a href="/dashboard" class="nav-item">
-        <span class="icon">🏠</span>
-        <span class="label">Accueil</span>
-    </a>
-    <a href="/stats" class="nav-item">
-        <span class="icon">📊</span>
-        <span class="label">Stats</span>
-    </a>
-    <a href="/analyse" class="nav-item">
-        <span class="icon">🧠</span>
-        <span class="label">Analyse</span>
-    </a>
-    <a href="/form" class="nav-item">
-        <span class="icon">📥</span>
-        <span class="label">Saisie</span>
-    </a>
-    <a href="/affichage" class="nav-item">
-        <span class="icon">📜</span>
-        <span class="label">Histo.</span>
-    </a>
-</nav>
+    <!-- Inclusion de la barre de navigation unifiée -->
+    {% include 'navbar.html' %}
+
     <div class="container">
         <h1>📊 Analyse en Temps Réel</h1>
         
-        {% for p in produits %}
-        <div class="card">
-            <div class="info">
-                <div>
-                    {{ p.nom }}
-                    {% if p.qte <= 30 %}
-                        <span class="status-tag" style="background: rgba(244,63,94,0.2); color: var(--danger);">Critique</span>
-                    {% elif p.qte <= 60 %}
-                        <span class="status-tag" style="background: rgba(251,191,36,0.2); color: var(--warning);">Alerte</span>
+        <!-- Affichage des messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% if produits and produits|length > 0 %}
+            {% for p in produits %}
+            <div class="card">
+                <div class="info">
+                    <div>
+                        {{ p.nom }}
+                        {% if p.qte <= 30 %}
+                            <span class="status-tag" style="background: rgba(244,63,94,0.2); color: var(--danger);">🔴 CRITIQUE</span>
+                        {% elif p.qte <= 60 %}
+                            <span class="status-tag" style="background: rgba(251,191,36,0.2); color: var(--warning);">🟡 ALERTE</span>
+                        {% else %}
+                            <span class="status-tag" style="background: rgba(16,185,129,0.2); color: var(--success);">🟢 SAIN</span>
+                        {% endif %}
+                    </div>
+                    <span>📦 {{ p.qte }} / 100 casiers</span>
+                </div>
+
+                <div class="progress-container">
+                    <div class="seuil-ligne"></div> 
+                    <div class="progress-fill" 
+                         style="width: {{ p.pct }}%; 
+                                background-color: {% if p.qte <= 30 %}var(--danger){% elif p.qte <= 60 %}var(--warning){% else %}var(--success){% endif %};
+                                box-shadow: 0 0 15px {% if p.qte <= 30 %}rgba(244,63,94,0.4){% elif p.qte <= 60 %}rgba(251,191,36,0.4){% else %}rgba(16,185,129,0.4){% endif %};">
+                    </div>
+                </div>
+
+                <div class="conseil">
+                    <strong>💡 Analyse :</strong> {{ p.conseil }}
+                    {% if p.qte > 30 %}
+                        <br><span>✅ Encore <b>{{ p.qte - 30 }}</b> ventes possibles avant le seuil critique.</span>
                     {% else %}
-                        <span class="status-tag" style="background: rgba(16,185,129,0.2); color: var(--success);">Sain</span>
+                        <br><span style="color: var(--danger);">⚠️ SEUIL DE SÉCURITÉ DÉPASSÉ ! Réapprovisionnement urgent nécessaire.</span>
                     {% endif %}
                 </div>
-                <span>{{ p.qte }} / 100 casiers</span>
             </div>
-
-            <div class="progress-container">
-                <div class="seuil-ligne"></div> 
-                <div class="progress-fill" 
-                     style="width: {{ p.pct }}%; 
-                            background-color: {% if p.qte <= 30 %}var(--danger){% elif p.qte <= 60 %}var(--warning){% else %}var(--success){% endif %};
-                            box-shadow: 0 0 15px {% if p.qte <= 30 %}rgba(244,63,94,0.4){% elif p.qte <= 60 %}rgba(251,191,36,0.4){% else %}rgba(16,185,129,0.4){% endif %};">
-                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>📭 Aucun produit trouvé dans la base de données.</p>
+                <p>Pour commencer l'analyse :</p>
+                <p>• <a href="/init_db">Initialiser la base de données</a> avec les produits</p>
+                <p>• <a href="/form">Ajouter des opérations</a> pour voir l'évolution des stocks</p>
             </div>
+        {% endif %}
 
-            <div class="conseil">
-                <strong>Analyse :</strong> {{ p.conseil }}
-                {% if p.qte > 30 %}
-                    <br><span>Encore <b>{{ p.qte - 30 }}</b> ventes possibles avant le seuil critique.</span>
-                {% else %}
-                    <br><span style="color: var(--danger);">⚠️ Seuil de sécurité dépassé !</span>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-
-        <a href="/" class="btn-back">← Retour au Dashboard</a>
+        <a href="/dashboard" class="btn-back">← Retour au Dashboard</a>
     </div>
 </body>
 </html>
