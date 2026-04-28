@@ -9,17 +9,17 @@
         /* --- NAVIGATION MOBILE --- */
 
 /* 1. Caché par défaut sur ordinateur */
-.mobile-nav {
-    display: none;
-}
+    .mobile-nav {
+        display: none;
+    }
 
 /* 2. Uniquement pour Tablettes et Téléphones (max 1024px) */
-@media (max-width: 1024px) {
+    @media (max-width: 1024px) {
     
     /* On cache la sidebar latérale si elle existe sur la page */
-    nav:not(.mobile-nav) {
-        display: none !important;
-    }
+        nav:not(.mobile-nav) {
+            display: none !important;
+        }
 
     /* On ajuste le contenu principal pour qu'il ne soit pas caché par la barre */
     main, .container {
