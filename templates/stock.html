@@ -6,6 +6,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+
+        /* --- NAVIGATION MOBILE --- */
+
+/* 1. Caché par défaut sur ordinateur */
+.mobile-nav {
+    display: none;
+}
+
+/* 2. Uniquement pour Tablettes et Téléphones (max 1024px) */
+@media (max-width: 1024px) {
+    
+    /* On cache la sidebar latérale si elle existe sur la page */
+    nav:not(.mobile-nav) {
+        display: none !important;
+    }
+
+    /* On ajuste le contenu principal pour qu'il ne soit pas caché par la barre */
+    main, .container {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding-bottom: 80px !important; /* Espace pour la barre */
+    }
+
+    /* Activation de la barre du bas */
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background: var(--card); /* Utilise la couleur de tes cartes */
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(10px); /* Effet flou moderne */
+    }
+
+    .nav-item {
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--text-dim);
+        transition: 0.3s;
+    }
+
+    .nav-item .icon {
+        font-size: 1.2rem;
+        margin-bottom: 4px;
+    }
+
+    .nav-item .label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Style pour le lien actif */
+    .nav-item:hover, .nav-item.active {
+        color: var(--accent);
+    }
+}
         :root {
             --bg: #0f172a;
             --card: #1e293b;
