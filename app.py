@@ -5,6 +5,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import io, base64
 import os 
+from datetime import datetime
 from collections import defaultdict
 
 # ==========================================
@@ -28,56 +29,125 @@ def fig_to_b64(fig):
     fig.savefig(img, format='png', bbox_inches='tight', dpi=110, facecolor=fig.get_facecolor())
     plt.close(fig)
     return base64.b64encode(img.getvalue()).decode()
+    
 
-# ==========================================
-# 2. ROUTES DE TRAITEMENT
-# ==========================================
+
+# Route pour initialiser la base de données
+@app.route('/init_db')
+def init_db():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        # Table produits
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS produits (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nom_produit VARCHAR(255) UNIQUE NOT NULL,
+                quantite_casiers INT DEFAULT 0,
+                capacite_max INT DEFAULT 100
+            )
+        """)
+        
+        # Table ventes
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS ventes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                produit VARCHAR(255) NOT NULL,
+                quantite INT NOT NULL,
+                type_mouvement VARCHAR(50) NOT NULL,
+                date_vente DATE NOT NULL,
+                prix_unitaire DECIMAL(10,2),
+                client VARCHAR(255) DEFAULT 'Anonyme',
+                telephone VARCHAR(50) DEFAULT '',
+                type_categorie VARCHAR(100) DEFAULT 'Standard'
+            )
+        """)
+        
+        # Insérer les produits existants (liste intacte)
+        cursor.execute("SELECT COUNT(*) as count FROM produits")
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            produits_liste = [
+                ('Malta', 85), ('Isembeck', 65), ('Castel', 45),
+                ('Djino', 30), ('Mutzig', 55), ('Top', 70),
+                ('Vimto', 25), ('Beaufort', 90), ('Guinness', 40), ('Kadji', 60)
+            ]
+            cursor.executemany(
+                "INSERT INTO produits (nom_produit, quantite_casiers, capacite_max) VALUES (%s, %s, 100)",
+                produits_liste
+            )
+        
+        conn.commit()
+        flash("Base de données initialisée avec succès !", "success")
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        return f"Erreur d'initialisation : {str(e)}"
+    finally:
+        conn.close()
+
 @app.route('/ajouter', methods=['POST'])
 def ajouter():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     
-    # 1. Récupération des infos du formulaire
-    nom = request.form.get('produit')
-    qte = int(request.form.get('qte', 0))
-    mouv = request.form.get('type_mouvement').lower()
-    date_vente = request.form.get('date_vente')
-    prix_unitaire = request.form.get('pu')
-
-    # 2. MISE À JOUR AUTOMATIQUE DU STOCK
-    if "sortie" in mouv or "vente" in mouv:
+    try:
+        nom = request.form.get('produit')
+        qte = int(request.form.get('qte', 0))
+        mouv = request.form.get('type_mouvement').lower()
+        date_vente = request.form.get('date_vente')
+        prix_unitaire = float(request.form.get('pu', 0))
+        client = request.form.get('client', 'Anonyme')
+        telephone = request.form.get('tel', '')
+        type_categorie = request.form.get('type_categorie', 'boisson')
+        
+        # Vérifier le produit
+        cursor.execute("SELECT quantite_casiers FROM produits WHERE nom_produit = %s", (nom,))
+        produit = cursor.fetchone()
+        
+        if not produit:
+            flash(f"Produit '{nom}' non trouvé !", "error")
+            return redirect(url_for('form'))
+        
+        stock_actuel = produit['quantite_casiers']
+        
+        # Mise à jour du stock
+        if "sortie" in mouv or "vente" in mouv:
+            if stock_actuel >= qte:
+                nouveau_stock = stock_actuel - qte
+                cursor.execute("""
+                    UPDATE produits SET quantite_casiers = %s WHERE nom_produit = %s
+                """, (nouveau_stock, nom))
+                message = f"Vente effectuée ! Stock restant : {nouveau_stock} casiers"
+            else:
+                flash(f"Stock insuffisant ! Stock actuel : {stock_actuel}", "error")
+                return redirect(url_for('form'))
+        else:
+            nouveau_stock = stock_actuel + qte
+            cursor.execute("""
+                UPDATE produits SET quantite_casiers = %s WHERE nom_produit = %s
+            """, (nouveau_stock, nom))
+            message = f"Entrée en stock effectuée ! Nouveau stock : {nouveau_stock} casiers"
+        
+        # Enregistrement
         cursor.execute("""
-            UPDATE produits 
-            SET quantite_casiers = GREATEST(0, quantite_casiers - %s)
-            WHERE nom_produit = %s
-        """, (qte, nom))
-    elif "entrée" in mouv or "ajout" in mouv or "achat" in mouv:
-        cursor.execute("""
-            UPDATE produits 
-            SET quantite_casiers = quantite_casiers + %s
-            WHERE nom_produit = %s
-        """, (qte, nom))
-
-    # 3. Enregistrement de l’historique
-    cursor.execute("""
-        INSERT INTO ventes (produit, quantite, type_mouvement, date_vente, prix_unitaire)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (nom, qte, mouv, date_vente, prix_unitaire))
-
-    conn.commit()
-    conn.close()
-
-    # 4. Redirection
-    return redirect(url_for('dashboard'))
-
-# ==========================================
-# 3. ROUTES D'AFFICHAGE
-# ==========================================
+            INSERT INTO ventes (produit, quantite, type_mouvement, date_vente, prix_unitaire, client, telephone, type_categorie)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (nom, qte, mouv, date_vente, prix_unitaire, client, telephone, type_categorie))
+        
+        conn.commit()
+        flash(message, "success")
+        return redirect(url_for('dashboard'))
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erreur : {str(e)}", "error")
+        return redirect(url_for('form'))
+    finally:
+        conn.close()
 
 @app.route('/')
-def index():
-    return redirect(url_for('dashboard'))
-
 @app.route('/dashboard')
 def dashboard():
     conn = None
@@ -85,65 +155,58 @@ def dashboard():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Stock Total Dynamique : Somme des 10 produits (ex: 100x10 = 1000 au début)
-        cursor.execute("SELECT SUM(quantite_casiers) as total FROM produits")
-        res_stock = cursor.fetchone()
-        stock_total = res_stock['total'] if res_stock and res_stock['total'] else 0
-
-        # Alertes : Produits sous le seuil de 35
-        cursor.execute("SELECT nom_produit as produit, quantite_casiers as reste FROM produits WHERE quantite_casiers <= 35 ORDER BY quantite_casiers ASC")
-        alertes_list = cursor.fetchall()
-
-        # Flux financiers et volumes
+        # Récupérer tous les produits pour l'analyse
+        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits ORDER BY quantite_casiers ASC")
+        produits = cursor.fetchall()
+        
+        # Stock total
+        stock_total = sum(p['quantite_casiers'] for p in produits)
+        
+        # Alertes (produits avec stock <= 30)
+        alertes = [p for p in produits if p['quantite_casiers'] <= 30]
+        
+        # Flux financiers
         cursor.execute("SELECT type_mouvement, quantite, prix_unitaire FROM ventes")
         mouvements = cursor.fetchall()
-
+        
         t_entrees, v_entrees, t_sorties, v_sorties = 0, 0, 0, 0
         for m in mouvements:
-            q, p = float(m['quantite'] or 0), float(m['prix_unitaire'] or 0)
-            mouv = str(m['type_mouvement']).lower()
-            if "entree" in mouv:
+            q = float(m['quantite'] or 0)
+            p = float(m['prix_unitaire'] or 0)
+            if "entree" in str(m['type_mouvement']).lower():
                 t_entrees += q
                 v_entrees += (q * p)
-            elif "sortie" in mouv:
+            else:
                 t_sorties += q
                 v_sorties += (q * p)
-
+        
+        # Nombre de clients
         cursor.execute("SELECT COUNT(DISTINCT client) as nb FROM ventes WHERE client != 'Anonyme'")
-        total_clients = cursor.fetchone()['nb'] or 0
-
-        return render_template('dashboard.html', clients=total_clients, stock_total=stock_total, 
-                               alertes=alertes_list, t_entrees=t_entrees, v_entrees=v_entrees, 
-                               t_sorties=t_sorties, v_sorties=v_sorties)
+        total_clients = cursor.fetchone()
+        nb_clients = total_clients['nb'] if total_clients else 0
+        
+        return render_template('dashboard.html', 
+                             produits=produits,
+                             clients=nb_clients, 
+                             stock_total=stock_total, 
+                             alertes=alertes, 
+                             t_entrees=t_entrees, 
+                             v_entrees=v_entrees, 
+                             t_sorties=t_sorties, 
+                             v_sorties=v_sorties)
     except Exception as e:
         return f"Erreur Dashboard : {str(e)}"
     finally:
         if conn: conn.close()
 
-@app.route('/affichage')
-def affichage():
-    conn = None
-    try:
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM ventes ORDER BY id DESC")
-        ventes = cursor.fetchall()
-        
-        ca_total = sum(float(v['quantite'] or 0) * float(v['prix_unitaire'] or 0) for v in ventes if "sortie" in str(v['type_mouvement']).lower())
-        
-        lignes_html = ""
-        for v in ventes:
-            q, p = float(v['quantite'] or 0), float(v['prix_unitaire'] or 0)
-            col = "#22c55e" if "entree" in str(v['type_mouvement']).lower() else "#f43f5e"
-            lignes_html += f"<tr><td>{v['date_vente']}</td><td><b>{v['produit']}</b></td><td>{v['client']}</td><td>{v['telephone']}</td><td>{v['type_categorie']}</td><td>{q}</td><td>{p:,.0f}</td><td style='color:{col}; font-weight:bold;'>{v['type_mouvement']}</td><td style='font-weight:bold;'>{q*p:,.0f} FCFA</td></tr>"
-        
-        with open("templates/stock.html", "r", encoding="utf-8") as f:
-            html = f.read()
-        return html.replace("__LIGNES__", lignes_html).replace("__CA__", f"{ca_total:,.0f}")
-    except Exception as e:
-        return f"Erreur affichage : {str(e)}"
-    finally:
-        if conn: conn.close()
+@app.route('/form')
+def form():
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT nom_produit FROM produits ORDER BY nom_produit")
+    produits = cursor.fetchall()
+    conn.close()
+    return render_template('form.html', produits=produits)
 
 @app.route('/stats')
 def stats():
@@ -152,63 +215,53 @@ def stats():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Style sombre pour le dashboard
         plt.rcParams.update({
-            "figure.facecolor": "#1e293b", "axes.facecolor": "#1e293b", 
-            "text.color": "#f8fafc", "axes.labelcolor": "#f8fafc", 
+            "figure.facecolor": "#1e293b", "axes.facecolor": "#1e293b",
+            "text.color": "#f8fafc", "axes.labelcolor": "#f8fafc",
             "xtick.color": "#94a3b8", "ytick.color": "#94a3b8"
         })
-
-        # --- 1. DONNÉES : Stock Actuel (Camembert) ---
-        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits")
-        res_s = cursor.fetchall()
-        noms_s = [r['nom_produit'] for r in res_s]
-        qtes_s = [float(r['quantite_casiers']) for r in res_s]
-
-        # --- 2. DONNÉES : Ventes par Mois (Barres) ---
-        # On extrait le mois et on somme les quantités de 'sortie'
-        query_mois = """
-            SELECT MONTH(date_vente) as mois, SUM(quantite) as total 
-            FROM ventes 
-            WHERE LOWER(type_mouvement) = 'sortie' 
-            GROUP BY MONTH(date_vente)
-            ORDER BY MONTH(date_vente)
-        """
-        cursor.execute(query_mois)
-        res_m = cursor.fetchall()
         
-        # Mapping des noms de mois en français
-        mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"]
-        labels_m = [mois_noms[int(r['mois'])-1] for r in res_m]
-        volumes_m = [float(r['total']) for r in res_m]
-
+        # Graphique camembert
+        cursor.execute("SELECT nom_produit, quantite_casiers FROM produits WHERE quantite_casiers > 0")
+        stocks = cursor.fetchall()
+        
         pies = []
-        bars = []
-
-        # Génération du Camembert (Stocks)
-        if qtes_s:
+        if stocks:
+            noms = [s['nom_produit'] for s in stocks]
+            qtes = [float(s['quantite_casiers']) for s in stocks]
+            
             fig1, ax1 = plt.subplots(figsize=(7, 7))
-            ax1.pie(qtes_s, labels=noms_s, autopct='%1.1f%%', startangle=140, colors=['#38bdf8','#10b981','#f43f5e','#fbbf24'])
+            ax1.pie(qtes, labels=noms, autopct='%1.1f%%', startangle=140)
             ax1.set_title("RÉPARTITION ACTUELLE DU STOCK", color="#38bdf8", fontweight='bold')
             pies.append(fig_to_b64(fig1))
-
-        # Génération de l'Histogramme (Ventes par mois)
-        if volumes_m:
+        
+        # Graphique ventes par mois
+        cursor.execute("""
+            SELECT MONTH(date_vente) as mois, SUM(quantite) as total 
+            FROM ventes 
+            WHERE LOWER(type_mouvement) = 'sortie'
+            GROUP BY MONTH(date_vente)
+            ORDER BY mois
+        """)
+        ventes_mois = cursor.fetchall()
+        
+        bars = []
+        if ventes_mois:
+            mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"]
+            labels = [mois_noms[int(v['mois'])-1] for v in ventes_mois]
+            volumes = [float(v['total']) for v in ventes_mois]
+            
             fig2, ax2 = plt.subplots(figsize=(10, 5))
-            ax2.bar(labels_m, volumes_m, color='#10b981', alpha=0.8)
+            ax2.bar(labels, volumes, color='#10b981', alpha=0.8)
             ax2.set_title("ÉVOLUTION DES VENTES MENSUELLES", color="#10b981", fontweight='bold')
             ax2.set_ylabel("Quantité Vendue (Casiers)")
             bars.append(fig_to_b64(fig2))
-
+        
         return render_template('stats.html', pies=pies, bars=bars)
     except Exception as e:
         return f"Erreur stats : {str(e)}"
     finally:
         if conn: conn.close()
-            
-@app.route('/form')
-def form():
-    return render_template('form.html')
 
 @app.route('/analyse')
 def analyse():
@@ -220,29 +273,24 @@ def analyse():
         stocks_db = cursor.fetchall()
 
         analyse_produits = []
-        # On définit la capacité maximale d'un casier pour le calcul du % (ex: 100)
-        CAPACITE_MAX = 100 
+        CAPACITE_MAX = 100
 
         for row in stocks_db:
             qte = int(row['quantite_casiers'])
             nom = row['nom_produit']
             
-            # 1. Calcul du pourcentage pour la jauge (ex: 80/100 -> 80%)
-            # On s'assure que ça ne dépasse pas 100% et que ça ne descend pas sous 0%
             pourcentage = max(0, min((qte / CAPACITE_MAX) * 100, 100))
             
-            # 2. Détermination du statut et du conseil
             if qte <= 30: 
                 statut = "CRITIQUE"
                 conseil = "RÉAPPROVISIONNEMENT URGENT !"
             elif qte <= 60: 
                 statut = "ALERTE"
-                conseil = f"Surveiller les ventes. Encore {qte - 30} ventes avant critique."
+                conseil = f"Surveiller les ventes. Encore {abs(qte - 30)} ventes avant critique."
             else:
                 statut = "SAIN"
                 conseil = f"Stock optimal. Encore {qte - 60} ventes possibles avant l'alerte."
             
-            # 3. Ajout à la liste avec le bon 'pct' pour le CSS de la barre
             analyse_produits.append({
                 'nom': nom, 
                 'qte': qte, 
@@ -257,5 +305,24 @@ def analyse():
     finally:
         if conn: conn.close()
 
+@app.route('/affichage')
+def affichage():
+    conn = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM ventes ORDER BY date_vente DESC, id DESC LIMIT 100")
+        ventes = cursor.fetchall()
+        
+        ca_total = sum(float(v['quantite'] or 0) * float(v['prix_unitaire'] or 0) 
+                      for v in ventes if "sortie" in str(v['type_mouvement']).lower())
+        
+        return render_template('affichage.html', ventes=ventes, ca_total=ca_total)
+    except Exception as e:
+        return f"Erreur affichage : {str(e)}"
+    finally:
+        if conn: conn.close()
+
 if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)== '__main__':
     app.run(debug=False)
