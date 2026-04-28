@@ -6,6 +6,257 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #f43f5e;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: var(--bg);
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--text-dim);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .glass-card {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow-x: auto;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 0.9rem;
+        }
+
+        th { 
+            text-align: left; 
+            color: var(--text-dim); 
+            padding: 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-weight: 600;
+        }
+
+        td { 
+            padding: 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .badge-mouvement {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-entree {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .badge-sortie {
+            background: rgba(244, 63, 94, 0.2);
+            color: var(--danger);
+        }
+
+        .ca-box {
+            margin-top: 20px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05));
+            border-radius: 12px;
+            text-align: right;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            body {
+                padding: 20px;
+                padding-bottom: 80px;
+            }
+
+            th, td {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            .btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+                padding-bottom: 80px;
+            }
+
+            .container {
+                padding: 0;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-group {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            th, td {
+                padding: 8px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Inclusion de la barre de navigation unifiée -->
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <header>
+            <h1>📜 Journal des Opérations</h1>
+            <div class="btn-group">
+                <a href="/dashboard" class="btn btn-outline">📊 Tableau de Bord</a>
+                <a href="/form" class="btn">➕ Nouvelle Opération</a>
+            </div>
+        </header>
+
+        <div class="glass-card">
+            <div style="overflow-x: auto;">
+                {% if ventes and ventes|length > 0 %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Produit</th>
+                            <th>Client</th>
+                            <th>Téléphone</th>
+                            <th>Catégorie</th>
+                            <th>Qté</th>
+                            <th>P.U (FCFA)</th>
+                            <th>Mouvement</th>
+                            <th>Total (FCFA)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in ventes %}
+                        <tr>
+                            <td>{{ v.date_vente }}</td>
+                            <td><strong>{{ v.produit }}</strong></td>
+                            <td>{{ v.client }}</td>
+                            <td>{{ v.telephone or '-' }}</td>
+                            <td>{{ v.type_categorie or 'Standard' }}</td>
+                            <td>{{ v.quantite }}</td>
+                            <td>{{ "{:,.0f}".format(v.prix_unitaire) if v.prix_unitaire else '0' }}</td>
+                            <td>
+                                <span class="badge-mouvement {% if 'entree' in v.type_mouvement.lower() %}badge-entree{% else %}badge-sortie{% endif %}">
+                                    {% if 'entree' in v.type_mouvement.lower() %}📥 Entrée{% else %}📤 Sortie{% endif %}
+                                </span>
+                            </td>
+                            <td style="font-weight: bold; color: {% if 'entree' in v.type_mouvement.lower() %}#10b981{% else %}#f43f5e{% endif %};">
+                                {{ "{:,.0f}".format((v.quantite|float) * (v.prix_unitaire|float)) }} FCFA
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>📭 Aucune opération enregistrée pour le moment.</p>
+                    <p>Commencez par <a href="/form" style="color: var(--accent);">ajouter une opération</a> ou <a href="/init_db" style="color: var(--accent);">initialiser la base de données</a>.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="ca-box">
+            💰 Chiffre d'Affaires Total : <strong>{{ "{:,.0f}".format(ca_total) }} FCFA</strong>
+        </div>
+    </div>
+</body>
+</html><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Journal des Opérations | EliteStock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
 
         /* --- NAVIGATION MOBILE --- */
 
