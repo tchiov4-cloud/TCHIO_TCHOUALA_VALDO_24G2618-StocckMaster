@@ -6,6 +6,311 @@
     <title>Saisie d'Opération | EliteStock</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --input-bg: #0f172a;
+            --border: #334155;
+            --success: #10b981;
+            --danger: #f43f5e;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 30px;
+            width: 100%;
+            max-width: 650px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 { 
+            color: var(--accent); 
+            text-align: center; 
+            margin-bottom: 25px; 
+            font-weight: 800; 
+            font-size: 1.5rem; 
+        }
+
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+        }
+
+        .form-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+
+        .full-width { 
+            grid-column: span 2; 
+        }
+
+        label { 
+            color: var(--text-dim); 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            color: white;
+            outline: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .btn-submit {
+            grid-column: span 2;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .pc-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.3s;
+        }
+
+        .pc-link:hover {
+            color: var(--accent);
+        }
+
+        /* Flash messages */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--success);
+        }
+
+        .flash-error {
+            background: rgba(244, 63, 94, 0.1);
+            border-left: 3px solid var(--danger);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: var(--danger);
+        }
+
+        .flash-warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 3px solid #fbbf24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: #fbbf24;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            body {
+                padding-bottom: 90px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                align-items: flex-start;
+                padding: 15px;
+                padding-bottom: 90px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Inclusion de la barre de navigation unifiée -->
+    {% include 'navbar.html' %}
+
+    <div class="card">
+        <h1>➕ Nouvelle Opération</h1>
+        
+        <!-- Affichage des messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form action="/ajouter" method="POST" class="form-grid">
+            <div class="form-group">
+                <label>📅 Date</label>
+                <input type="date" name="date_vente" id="dateInput" required>
+            </div>
+
+            <div class="form-group">
+                <label>🔄 Mouvement</label>
+                <select name="type_mouvement" required>
+                    <option value="sortie">📤 Sortie (Vente)</option>
+                    <option value="entree">📥 Entrée (Stock)</option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label>🍾 Produit</label>
+                <select name="produit" required>
+                    {% if produits %}
+                        {% for produit in produits %}
+                            <option value="{{ produit.nom_produit }}">{{ produit.nom_produit }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="Malta">Malta</option>
+                        <option value="Isembeck">Isembeck</option>
+                        <option value="Castel">Castel</option>
+                        <option value="Djino">Djino</option>
+                        <option value="Mutzig">Mutzig</option>
+                        <option value="Top">Top</option>
+                        <option value="Vimto">Vimto</option>
+                        <option value="Beaufort">Beaufort</option>
+                        <option value="Guinness">Guinness</option>
+                        <option value="Kadji">Kadji</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>👤 Nom client</label>
+                <input type="text" name="client" placeholder="Nom du client" required>
+            </div>
+
+            <div class="form-group">
+                <label>📞 Téléphone</label>
+                <input type="tel" name="tel" placeholder="Numéro de téléphone" pattern="[0-9]{9,}" title="Veuillez entrer un numéro valide (minimum 9 chiffres)">
+            </div>
+
+            <div class="form-group">
+                <label>📦 Quantité</label>
+                <input type="number" name="qte" placeholder="Nombre de casiers" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label>💰 Prix Unitaire</label>
+                <input type="number" name="pu" placeholder="Prix en FCFA" min="0" step="100" required>
+            </div>
+
+            <input type="hidden" name="type_categorie" value="boisson">
+
+            <button type="submit" class="btn-submit">✅ Valider l'opération</button>
+        </form>
+        
+        <a href="/dashboard" class="pc-link">← Retour au Dashboard</a>
+    </div>
+
+    <script>
+        // Mettre la date du jour par défaut
+        document.getElementById('dateInput').valueAsDate = new Date();
+        
+        // Validation supplémentaire pour le numéro de téléphone
+        const telInput = document.querySelector('input[name="tel"]');
+        if (telInput) {
+            telInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+            });
+        }
+        
+        // Confirmation avant soumission pour les sorties
+        const form = document.querySelector('form');
+        const mouvementSelect = document.querySelector('select[name="type_mouvement"]');
+        
+        if (form && mouvementSelect) {
+            form.addEventListener('submit', function(e) {
+                if (mouvementSelect.value === 'sortie') {
+                    const qte = document.querySelector('input[name="qte"]').value;
+                    if (qte && confirm(`⚠️ Confirmation de vente\n\nÊtes-vous sûr de vouloir vendre ${qte} casier(s) ?\nCette action diminuera le stock.`)) {
+                        return true;
+                    } else if (qte) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saisie d'Opération | EliteStock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
 
         /* --- NAVIGATION MOBILE --- */
 
